@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import '../styles/Header.css'
 
-function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme }) {
+function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -21,26 +21,46 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme }) {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }
 
+  const handleNavClick = (section) => {
+    setActiveSection(section)
+    setSearchQuery('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <header className={`header ${scrolled ? 'scrolled' : ''}`}>
       <div className="header-content">
-        <div className="logo">
-          <span className="logo-icon">🎬</span>
+        <div className="logo" onClick={() => handleNavClick('home')}>
           <span className="logo-text">MovieWatch</span>
-          <span className="logo-badge">PRO</span>
         </div>
         
         <nav className="nav">
-          <a href="#" className="nav-link active">
+          <a 
+            href="#" 
+            className={`nav-link ${activeSection === 'home' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}
+          >
             <span>Home</span>
           </a>
-          <a href="#" className="nav-link">
+          <a 
+            href="#" 
+            className={`nav-link ${activeSection === 'movies' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); handleNavClick('movies'); }}
+          >
             <span>Movies</span>
           </a>
-          <a href="#" className="nav-link">
+          <a 
+            href="#" 
+            className={`nav-link ${activeSection === 'tvshows' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); handleNavClick('tvshows'); }}
+          >
             <span>TV Shows</span>
           </a>
-          <a href="#" className="nav-link">
+          <a 
+            href="#" 
+            className={`nav-link ${activeSection === 'mylist' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); handleNavClick('mylist'); }}
+          >
             <span>My List</span>
           </a>
         </nav>
@@ -49,7 +69,7 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme }) {
           <form className="search-bar" onSubmit={handleSearch}>
             <input
               type="text"
-              placeholder="Search movies..."
+              placeholder="Search movies & TV shows..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
@@ -89,9 +109,6 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme }) {
             </svg>
             <span className="notification-dot"></span>
           </button>
-          <div className="user-avatar">
-            <img src="https://i.pravatar.cc/150?img=12" alt="User" />
-          </div>
         </div>
       </div>
     </header>

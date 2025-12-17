@@ -7,20 +7,23 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
   const [trailerKey, setTrailerKey] = useState(null)
   const [showTrailer, setShowTrailer] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [similarContent, setSimilarContent] = useState([])
+  const [loadingSimilar, setLoadingSimilar] = useState(true)
 
   useEffect(() => {
     fetchTrailer()
-  }, [movie.id])
+    fetchSimilarContent()
+  }, [movie.id, movie.type])
 
   const fetchTrailer = async () => {
     setLoading(true)
     try {
+      const endpoint = movie.type === 'tv' ? 'tv' : 'movie'
       const response = await fetch(
-        `https://api.themoviedb.org/3/movie/${movie.id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+        `https://api.themoviedb.org/3/${endpoint}/${movie.id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
       )
       const data = await response.json()
       
-      // Find official trailer or teaser
       const trailer = data.results?.find(
         video => video.type === 'Trailer' && video.site === 'YouTube'
       ) || data.results?.find(
@@ -36,10 +39,50 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
     setLoading(false)
   }
 
+  const fetchSimilarContent = async () => {
+    setLoadingSimilar(true)
+    try {
+      const endpoint = movie.type === 'tv' ? 'tv' : 'movie'
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movie.id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+      )
+      const data = await response.json()
+      
+      const formatted = data.results?.slice(0, 6).map(item => ({
+        id: item.id,
+        title: item.title || item.name,
+        year: (item.release_date || item.first_air_date)?.split('-')[0] || 'N/A',
+        rating: item.vote_average?.toFixed(1) || 'N/A',
+        poster_url: item.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+          : 'https://via.placeholder.com/500x750',
+        description: item.overview || 'No description available.',
+        backdrop_url: item.backdrop_path
+          ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+          : null,
+        type: movie.type
+      })) || []
+      
+      setSimilarContent(formatted)
+    } catch (error) {
+      console.error('Error fetching similar content:', error)
+    }
+    setLoadingSimilar(false)
+  }
+
   const handlePlayTrailer = () => {
     if (trailerKey) {
       setShowTrailer(true)
     }
+  }
+
+  const handleSimilarClick = (similarMovie) => {
+    // This will close current modal and open the new one
+    onClose()
+    // Small delay to allow smooth transition
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('openMovie', { detail: similarMovie }))
+    }, 100)
   }
 
   return (
@@ -76,6 +119,7 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
                 {movie.year && <span className="meta-item">{movie.year}</span>}
                 {movie.rating && <span className="meta-item">⭐ {movie.rating}</span>}
                 {movie.runtime && <span className="meta-item">{movie.runtime} min</span>}
+                <span className="meta-item">{movie.type === 'tv' ? 'TV Show' : 'Movie'}</span>
               </div>
               <p className="modal-description">
                 {movie.description || 'No description available for this title.'}
@@ -102,6 +146,40 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
                 >
                   {isInWatchlist ? '✓ In My List' : '+ My List'}
                 </button>
+              </div>
+
+              {/* Similar Content Section */}
+              <div className="similar-section">
+                <h3 className="similar-title">Similar {movie.type === 'tv' ? 'Shows' : 'Movies'}</h3>
+                {loadingSimilar ? (
+                  <div className="similar-loading">
+                    <div className="loading-spinner-small"></div>
+                  </div>
+                ) : similarContent.length > 0 ? (
+                  <div className="similar-grid">
+                    {similarContent.map((item) => (
+                      <div 
+                        key={item.id} 
+                        className="similar-card"
+                        onClick={() => handleSimilarClick(item)}
+                      >
+                        <div className="similar-poster">
+                          <img src={item.poster_url} alt={item.title} />
+                          <div className="similar-overlay">
+                            <span className="similar-play">▶</span>
+                          </div>
+                          <div className="similar-rating">⭐ {item.rating}</div>
+                        </div>
+                        <div className="similar-info">
+                          <h4>{item.title}</h4>
+                          <span className="similar-year">{item.year}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-similar">No similar content found</p>
+                )}
               </div>
             </div>
           </>
