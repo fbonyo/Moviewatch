@@ -4,27 +4,26 @@ import '../styles/VideoPlayer.css'
 function VideoPlayer({ movie, onClose }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   
-  // Sources that work better in development
+  // More reliable sources - these should work on deployed sites
   const sources = [
     {
-      name: 'VidSrc',
+      name: 'VidSrc.to',
       url: movie.type === 'tv' 
-        ? `https://vidsrc.xyz/embed/tv/${movie.id}/1/1`
-        : `https://vidsrc.xyz/embed/movie/${movie.id}`
+        ? `https://vidsrc.to/embed/tv/${movie.id}/1/1`
+        : `https://vidsrc.to/embed/movie/${movie.id}`
     },
     {
-      name: 'VidSrc Pro',
+      name: 'VidSrc.xyz',
       url: movie.type === 'tv'
-        ? `https://vidsrc.pro/embed/tv/${movie.id}/1/1`
-        : `https://vidsrc.pro/embed/movie/${movie.id}`
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+        : `https://vidsrc.xyz/embed/movie?tmdb=${movie.id}`
     },
     {
-      name: 'VidLink',
+      name: 'VidSrc.me',
       url: movie.type === 'tv'
-        ? `https://vidlink.pro/tv/${movie.id}/1/1`
-        : `https://vidlink.pro/movie/${movie.id}`
+        ? `https://vidsrc.me/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+        : `https://vidsrc.me/embed/movie?tmdb=${movie.id}`
     },
     {
       name: 'Embed.su',
@@ -33,29 +32,33 @@ function VideoPlayer({ movie, onClose }) {
         : `https://embed.su/embed/movie/${movie.id}`
     },
     {
-      name: 'AutoEmbed',
+      name: 'VidLink Pro',
       url: movie.type === 'tv'
-        ? `https://autoembed.co/tv/tmdb/${movie.id}-1-1`
-        : `https://autoembed.co/movie/tmdb/${movie.id}`
+        ? `https://vidlink.pro/tv/${movie.id}?s=1&e=1`
+        : `https://vidlink.pro/movie/${movie.id}`
+    },
+    {
+      name: 'Movie API',
+      url: movie.type === 'tv'
+        ? `https://moviesapi.club/tv/${movie.id}-1-1`
+        : `https://moviesapi.club/movie/${movie.id}`
+    },
+    {
+      name: '2Embed',
+      url: movie.type === 'tv'
+        ? `https://www.2embed.cc/embedtv/${movie.id}&s=1&e=1`
+        : `https://www.2embed.cc/embed/${movie.id}`
     }
   ]
 
   useEffect(() => {
     setLoading(true)
-    setError(false)
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 3000)
+    const timer = setTimeout(() => setLoading(false), 3000)
     return () => clearTimeout(timer)
   }, [selectedSource])
 
   const handleSourceChange = (index) => {
     setSelectedSource(index)
-  }
-
-  const handleIframeError = () => {
-    setError(true)
-    setLoading(false)
   }
 
   return (
@@ -76,36 +79,26 @@ function VideoPlayer({ movie, onClose }) {
             {loading && (
               <div className="video-player-loading">
                 <div className="loading-spinner"></div>
-                <p>Loading from {sources[selectedSource].name}...</p>
-                <span className="loading-source">This may take a few seconds</span>
-              </div>
-            )}
-            
-            {error && !loading && (
-              <div className="video-error">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <h3>Source unavailable</h3>
-                <p>This source couldn't load the video.</p>
-                <p className="error-hint">Try selecting a different source from the list →</p>
+                <p>Loading {sources[selectedSource].name}...</p>
+                <span className="loading-source">Finding best quality stream...</span>
+                <div className="loading-tip">
+                  💡 Tip: If this source doesn't load, try another from the list →
+                </div>
               </div>
             )}
             
             <iframe
-              key={selectedSource}
+              key={`${selectedSource}-${movie.id}`}
               src={sources[selectedSource].url}
               allowFullScreen
-              frameBorder="0"
-              scrolling="no"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               referrerPolicy="origin"
-              onLoad={() => setLoading(false)}
-              onError={handleIframeError}
+              onLoad={() => {
+                console.log(`Loaded source ${selectedSource}: ${sources[selectedSource].name}`)
+                setLoading(false)
+              }}
               style={{ 
-                display: (loading || error) ? 'none' : 'block',
+                display: loading ? 'none' : 'block',
                 width: '100%',
                 height: '100%',
                 border: 'none'
@@ -115,13 +108,16 @@ function VideoPlayer({ movie, onClose }) {
 
           <div className="video-sources-sidebar">
             <div className="sources-header">
-              <h3>Available Sources</h3>
-              <span className="sources-count">{sources.length} sources</span>
+              <h3>Video Sources</h3>
+              <span className="sources-count">{sources.length} available</span>
             </div>
             
-            <p className="sources-description">
-              Try different sources if one doesn't work. Each source searches different streaming providers.
-            </p>
+            <div className="sources-tip">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <p>Click different sources if one doesn't work. Each searches different servers.</p>
+            </div>
             
             <div className="sources-list">
               {sources.map((source, index) => (
@@ -135,36 +131,33 @@ function VideoPlayer({ movie, onClose }) {
                     <span className="source-name">{source.name}</span>
                     {selectedSource === index && (
                       <span className="source-status">
-                        {loading ? '⏳ Loading...' : error ? '❌ Failed' : '✓ Playing'}
+                        {loading ? '⏳ Loading...' : '✓ Active'}
                       </span>
                     )}
                   </div>
-                  {selectedSource === index && !error && (
-                    <div className="source-indicator">
-                      <div className="pulse"></div>
-                    </div>
+                  {selectedSource === index && !loading && (
+                    <div className="source-pulse"></div>
                   )}
                 </button>
               ))}
             </div>
             
             <div className="sources-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4"/>
-                <path d="M12 8h.01"/>
-              </svg>
-              <div>
-                <p><strong>Troubleshooting:</strong></p>
-                <ul>
-                  <li>If video shows blank, try a different source</li>
-                  <li>Player controls appear inside the video frame</li>
-                  <li>Some sources may take longer to load</li>
-                  <li>Ad-blockers may interfere with playback</li>
-                </ul>
-                <p style="margin-top: 0.75rem; opacity: 0.7; font-size: 0.8rem;">
-                  No content is hosted by us. Sources search the web for streams.
-                </p>
+              <h4>📺 How to Watch</h4>
+              <ol>
+                <li>Wait for the player to load (3-10 seconds)</li>
+                <li>If you see a blank screen, try sources 2-7</li>
+                <li>Some movies/shows may not be available yet</li>
+                <li>Player controls appear inside the video frame</li>
+              </ol>
+              
+              <div className="info-note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4"/>
+                  <path d="M12 8h.01"/>
+                </svg>
+                <p>We don't host content. Sources search the web for streams.</p>
               </div>
             </div>
           </div>
