@@ -3,7 +3,7 @@ import '../styles/MovieModal.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
 
-function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
+function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist, onPlayMovie }) {
   const [trailerKey, setTrailerKey] = useState(null)
   const [showTrailer, setShowTrailer] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -77,12 +77,14 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
   }
 
   const handleSimilarClick = (similarMovie) => {
-    // This will close current modal and open the new one
     onClose()
-    // Small delay to allow smooth transition
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('openMovie', { detail: similarMovie }))
     }, 100)
+  }
+
+  const handlePlayNow = () => {
+    onPlayMovie(movie)
   }
 
   return (
@@ -125,19 +127,12 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
                 {movie.description || 'No description available for this title.'}
               </p>
               <div className="modal-buttons">
+                <button className="btn btn-primary" onClick={handlePlayNow}>
+                  ▶ Watch Now
+                </button>
                 {trailerKey && (
-                  <button className="btn btn-primary" onClick={handlePlayTrailer}>
-                    ▶ Watch Trailer
-                  </button>
-                )}
-                {!trailerKey && !loading && (
-                  <button className="btn btn-primary" disabled style={{opacity: 0.5}}>
-                    No Trailer Available
-                  </button>
-                )}
-                {loading && (
-                  <button className="btn btn-primary" disabled>
-                    Loading...
+                  <button className="btn btn-secondary" onClick={handlePlayTrailer}>
+                    🎬 Trailer
                   </button>
                 )}
                 <button 
@@ -148,7 +143,6 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist }) {
                 </button>
               </div>
 
-              {/* Similar Content Section */}
               <div className="similar-section">
                 <h3 className="similar-title">Similar {movie.type === 'tv' ? 'Shows' : 'Movies'}</h3>
                 {loadingSimilar ? (

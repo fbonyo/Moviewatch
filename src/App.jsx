@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Hero from './components/Hero'
 import MovieGrid from './components/MovieGrid'
 import MovieModal from './components/MovieModal'
+import VideoPlayer from './components/VideoPlayer'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -12,6 +13,7 @@ function App() {
   const [movies, setMovies] = useState([])
   const [tvShows, setTvShows] = useState([])
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [playingMovie, setPlayingMovie] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -27,7 +29,6 @@ function App() {
     fetchLatestMovies(1)
     fetchLatestTVShows(1)
 
-    // Listen for similar movie clicks
     const handleOpenMovie = (event) => {
       setSelectedMovie(event.detail)
     }
@@ -323,6 +324,11 @@ function App() {
     }
   }
 
+  const handlePlayMovie = (movie) => {
+    setSelectedMovie(null)
+    setPlayingMovie(movie)
+  }
+
   const getDisplayContent = () => {
     switch(activeSection) {
       case 'movies':
@@ -369,6 +375,13 @@ function App() {
           onClose={() => setSelectedMovie(null)}
           isInWatchlist={watchlist.some(m => m.id === selectedMovie.id && m.type === selectedMovie.type)}
           onToggleWatchlist={toggleWatchlist}
+          onPlayMovie={handlePlayMovie}
+        />
+      )}
+      {playingMovie && (
+        <VideoPlayer 
+          movie={playingMovie}
+          onClose={() => setPlayingMovie(null)}
         />
       )}
     </div>
