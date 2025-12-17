@@ -31,7 +31,8 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
     <header className={`header ${scrolled ? 'scrolled' : ''}`}>
       <div className="header-content">
         <div className="logo" onClick={() => handleNavClick('home')}>
-          <span className="logo-text">MovieWatch</span>
+          <span className="logo-text">Frobo's Cinema</span>
+          <span className="logo-icon">🍿</span>
         </div>
         
         <nav className="nav">
