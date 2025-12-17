@@ -1,0 +1,232 @@
+.continue-watching-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+  background: var(--bg-primary);
+}
+
+.continue-watching-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.continue-watching-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  position: relative;
+  display: inline-block;
+}
+
+.continue-watching-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: var(--gradient-accent);
+  border-radius: 2px;
+}
+
+.continue-count {
+  padding: 0.3rem 0.8rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.continue-watching-scroll {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-bg) transparent;
+}
+
+.continue-watching-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.continue-watching-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 2.5rem;
+}
+
+.continue-watching-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-bg);
+  border-radius: 3px;
+}
+
+.continue-watching-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border);
+}
+
+.continue-watching-grid {
+  display: flex;
+  gap: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.continue-card {
+  flex: 0 0 280px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-card:hover {
+  transform: translateY(-5px);
+}
+
+.continue-poster {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.continue-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.continue-card:hover .continue-poster img {
+  transform: scale(1.05);
+  filter: brightness(0.7);
+}
+
+.continue-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.continue-card:hover .continue-overlay {
+  opacity: 1;
+}
+
+.continue-play-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 20px rgba(245, 158, 11, 0.5);
+}
+
+.continue-play-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.7);
+}
+
+.continue-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.continue-progress-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  transition: width 0.3s ease;
+}
+
+.continue-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.continue-card:hover .continue-remove {
+  opacity: 1;
+}
+
+.continue-remove:hover {
+  background: rgba(239, 68, 68, 0.9);
+  border-color: transparent;
+  transform: scale(1.1);
+}
+
+.continue-info {
+  padding: 0 0.25rem;
+}
+
+.continue-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.continue-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.continue-time {
+  color: var(--text-secondary);
+}
+
+.continue-percent {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .continue-watching-container {
+    padding: 1.5rem 1.5rem;
+  }
+  
+  .continue-watching-title {
+    font-size: 1.5rem;
+  }
+  
+  .continue-card {
+    flex: 0 0 240px;
+  }
+}

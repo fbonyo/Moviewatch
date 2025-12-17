@@ -1,0 +1,120 @@
+.genre-filter-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem 1rem;
+  background: var(--bg-primary);
+}
+
+.genre-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.genre-filter-header h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.genre-count {
+  padding: 0.3rem 0.8rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.genre-filter-scroll {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-bg) transparent;
+}
+
+.genre-filter-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.genre-filter-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.genre-filter-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-bg);
+  border-radius: 3px;
+}
+
+.genre-filter-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border);
+}
+
+.genre-filter {
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.genre-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 25px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.genre-btn:hover {
+  background: var(--glass-border);
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+}
+
+.genre-btn.active {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+.genre-icon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.genre-name {
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .genre-filter-container {
+    padding: 1.5rem 1.5rem 0.5rem;
+  }
+  
+  .genre-filter-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .genre-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .genre-icon {
+    font-size: 1rem;
+  }
+}

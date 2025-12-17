@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Hero from './components/Hero'
+import GenreFilter from './components/GenreFilter'
 import MovieGrid from './components/MovieGrid'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
+import Pagination from './components/Pagination'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -16,18 +18,18 @@ function App() {
   const [playingMovie, setPlayingMovie] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [watchlist, setWatchlist] = useState([])
   const [theme, setTheme] = useState('dark')
   const [activeSection, setActiveSection] = useState('home')
   const [currentPage, setCurrentPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [selectedGenre, setSelectedGenre] = useState(null)
 
   useEffect(() => {
     loadWatchlist()
     loadTheme()
-    fetchLatestMovies(1)
-    fetchLatestTVShows(1)
+    fetchLatestMovies(1, null)
+    fetchLatestTVShows(1, null)
 
     const handleOpenMovie = (event) => {
       setSelectedMovie(event.detail)
@@ -41,23 +43,6 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme)
     saveTheme()
   }, [theme])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (loadingMore || !hasMore) return
-      
-      const scrollHeight = document.documentElement.scrollHeight
-      const scrollTop = document.documentElement.scrollTop
-      const clientHeight = document.documentElement.clientHeight
-      
-      if (scrollTop + clientHeight >= scrollHeight - 500) {
-        loadMoreContent()
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [activeSection, currentPage, loadingMore, hasMore])
 
   const loadTheme = async () => {
     try {
@@ -78,35 +63,19 @@ function App() {
     }
   }
 
-  const fetchLatestMovies = async (page) => {
-    if (page === 1) setLoading(true)
-    else setLoadingMore(true)
+  const fetchLatestMovies = async (page, genreId) => {
+    setLoading(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     
     try {
-      const [upcomingRes, nowPlayingRes, popularRes, topRatedRes] = await Promise.all([
-        fetch(`${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`)
-      ])
+      const endpoint = genreId 
+        ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
+        : `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
       
-      const upcomingData = await upcomingRes.json()
-      const nowPlayingData = await nowPlayingRes.json()
-      const popularData = await popularRes.json()
-      const topRatedData = await topRatedRes.json()
+      const response = await fetch(endpoint)
+      const data = await response.json()
       
-      const allMovies = [
-        ...upcomingData.results, 
-        ...nowPlayingData.results, 
-        ...popularData.results,
-        ...topRatedData.results
-      ]
-      
-      const uniqueMovies = Array.from(
-        new Map(allMovies.map(movie => [movie.id, movie])).values()
-      )
-      
-      const formattedMovies = uniqueMovies.map(movie => ({
+      const formattedMovies = data.results.map(movie => ({
         id: movie.id,
         title: movie.title,
         year: movie.release_date?.split('-')[0] || '2024',
@@ -121,56 +90,28 @@ function App() {
         type: 'movie'
       }))
       
-      if (page === 1) {
-        setMovies(formattedMovies)
-      } else {
-        setMovies(prev => {
-          const combined = [...prev, ...formattedMovies]
-          const unique = Array.from(
-            new Map(combined.map(m => [m.id, m])).values()
-          )
-          return unique
-        })
-      }
-      
-      setHasMore(formattedMovies.length > 0)
+      setMovies(formattedMovies)
+      setTotalPages(Math.min(data.total_pages, 500))
+      setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching movies:', error)
     }
-    
     setLoading(false)
-    setLoadingMore(false)
   }
 
-  const fetchLatestTVShows = async (page) => {
-    if (page === 1) setLoading(true)
-    else setLoadingMore(true)
+  const fetchLatestTVShows = async (page, genreId) => {
+    setLoading(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     
     try {
-      const [popularRes, topRatedRes, onAirRes, airingTodayRes] = await Promise.all([
-        fetch(`${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/tv/top_rated?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/tv/on_the_air?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/tv/airing_today?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`)
-      ])
+      const endpoint = genreId
+        ? `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
+        : `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
       
-      const popularData = await popularRes.json()
-      const topRatedData = await topRatedRes.json()
-      const onAirData = await onAirRes.json()
-      const airingTodayData = await airingTodayRes.json()
+      const response = await fetch(endpoint)
+      const data = await response.json()
       
-      const allShows = [
-        ...popularData.results, 
-        ...topRatedData.results, 
-        ...onAirData.results,
-        ...airingTodayData.results
-      ]
-      
-      const uniqueShows = Array.from(
-        new Map(allShows.map(show => [show.id, show])).values()
-      )
-      
-      const formattedShows = uniqueShows.map(show => ({
+      const formattedShows = data.results.map(show => ({
         id: show.id,
         title: show.name,
         year: show.first_air_date?.split('-')[0] || '2024',
@@ -185,57 +126,31 @@ function App() {
         type: 'tv'
       }))
       
-      if (page === 1) {
-        setTvShows(formattedShows)
-      } else {
-        setTvShows(prev => {
-          const combined = [...prev, ...formattedShows]
-          const unique = Array.from(
-            new Map(combined.map(s => [s.id, s])).values()
-          )
-          return unique
-        })
-      }
-      
-      setHasMore(formattedShows.length > 0)
+      setTvShows(formattedShows)
+      setTotalPages(Math.min(data.total_pages, 500))
+      setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching TV shows:', error)
     }
-    
     setLoading(false)
-    setLoadingMore(false)
   }
 
-  const loadMoreContent = () => {
-    if (loadingMore || !hasMore || activeSection === 'mylist' || activeSection === 'search') return
-    
-    const nextPage = currentPage + 1
-    setCurrentPage(nextPage)
-    
-    if (activeSection === 'movies') {
-      fetchLatestMovies(nextPage)
-    } else if (activeSection === 'tvshows') {
-      fetchLatestTVShows(nextPage)
-    } else if (activeSection === 'home') {
-      fetchLatestMovies(nextPage)
-    }
-  }
-
-  const searchMovies = async (query) => {
+  const searchMovies = async (query, page = 1) => {
     if (!query.trim()) {
-      fetchLatestMovies(1)
+      fetchLatestMovies(1, null)
       setActiveSection('home')
       setCurrentPage(1)
+      setSelectedGenre(null)
       return
     }
     
     setLoading(true)
-    setCurrentPage(1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     
     try {
       const [movieRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`),
-        fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`)
+        fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`),
+        fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`)
       ])
       
       const movieData = await movieRes.json()
@@ -272,12 +187,39 @@ function App() {
       })) || []
       
       setMovies([...formattedMovies, ...formattedTVShows])
+      setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))
+      setCurrentPage(page)
       setActiveSection('search')
-      setHasMore(false)
+      setSelectedGenre(null)
     } catch (error) {
       console.error('Error searching:', error)
     }
     setLoading(false)
+  }
+
+  const handlePageChange = (page) => {
+    if (activeSection === 'movies') {
+      fetchLatestMovies(page, selectedGenre)
+    } else if (activeSection === 'tvshows') {
+      fetchLatestTVShows(page, selectedGenre)
+    } else if (activeSection === 'search') {
+      searchMovies(searchQuery, page)
+    } else if (activeSection === 'home') {
+      fetchLatestMovies(page, selectedGenre)
+    }
+  }
+
+  const handleGenreChange = (genreId) => {
+    setSelectedGenre(genreId)
+    setCurrentPage(1)
+    
+    if (activeSection === 'movies') {
+      fetchLatestMovies(1, genreId)
+    } else if (activeSection === 'tvshows') {
+      fetchLatestTVShows(1, genreId)
+    } else {
+      fetchLatestMovies(1, genreId)
+    }
   }
 
   const loadWatchlist = async () => {
@@ -313,14 +255,17 @@ function App() {
   const handleSectionChange = (section) => {
     setActiveSection(section)
     setCurrentPage(1)
-    setHasMore(true)
+    setSelectedGenre(null)
     
     if (section === 'movies') {
       setLoading(true)
-      fetchLatestMovies(1)
+      fetchLatestMovies(1, null)
     } else if (section === 'tvshows') {
       setLoading(true)
-      fetchLatestTVShows(1)
+      fetchLatestTVShows(1, null)
+    } else if (section === 'home') {
+      setLoading(true)
+      fetchLatestMovies(1, null)
     }
   }
 
@@ -332,19 +277,21 @@ function App() {
   const getDisplayContent = () => {
     switch(activeSection) {
       case 'movies':
-        return { data: movies, title: 'Movies' }
+        return { data: movies, title: selectedGenre ? 'Movies by Genre' : 'Popular Movies', type: 'movie' }
       case 'tvshows':
-        return { data: tvShows, title: 'TV Shows' }
+        return { data: tvShows, title: selectedGenre ? 'TV Shows by Genre' : 'Popular TV Shows', type: 'tv' }
       case 'mylist':
-        return { data: watchlist, title: 'My List' }
+        return { data: watchlist, title: 'My List', type: 'movie' }
       case 'search':
-        return { data: movies, title: 'Search Results' }
+        return { data: movies, title: 'Search Results', type: 'movie' }
       default:
-        return { data: movies, title: 'Trending Now' }
+        return { data: movies, title: selectedGenre ? 'Movies by Genre' : 'Popular Movies', type: 'movie' }
     }
   }
 
   const displayContent = getDisplayContent()
+  const showPagination = activeSection !== 'mylist' && !loading && displayContent.data.length > 0
+  const showGenreFilter = (activeSection === 'home' || activeSection === 'movies' || activeSection === 'tvshows') && activeSection !== 'mylist'
 
   return (
     <div className="app">
@@ -360,15 +307,28 @@ function App() {
       {activeSection === 'home' && (
         <Hero movies={movies} onSelectMovie={setSelectedMovie} />
       )}
+      {showGenreFilter && (
+        <GenreFilter 
+          selectedGenre={selectedGenre}
+          onGenreChange={handleGenreChange}
+          contentType={displayContent.type}
+        />
+      )}
       <MovieGrid 
         movies={displayContent.data} 
         loading={loading}
-        loadingMore={loadingMore}
         onSelectMovie={setSelectedMovie}
         watchlist={watchlist}
         onToggleWatchlist={toggleWatchlist}
         title={displayContent.title}
       />
+      {showPagination && (
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
       {selectedMovie && (
         <MovieModal 
           movie={selectedMovie} 

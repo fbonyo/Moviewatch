@@ -2,7 +2,7 @@ import React from 'react'
 import MovieCard from './MovieCard'
 import '../styles/MovieGrid.css'
 
-function MovieGrid({ movies, loading, loadingMore, onSelectMovie, watchlist, onToggleWatchlist, title = "Trending Now" }) {
+function MovieGrid({ movies, loading, onSelectMovie, watchlist, onToggleWatchlist, title = "Trending Now" }) {
   if (loading) {
     return (
       <div className="movie-grid-container">
@@ -58,13 +58,6 @@ function MovieGrid({ movies, loading, loadingMore, onSelectMovie, watchlist, onT
           />
         ))}
       </div>
-      
-      {loadingMore && (
-        <div className="loading-more">
-          <div className="loading-spinner-small"></div>
-          <p>Loading more...</p>
-        </div>
-      )}
     </div>
   )
 }

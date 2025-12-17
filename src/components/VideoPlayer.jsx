@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import '../styles/VideoPlayer.css'
 
-function VideoPlayer({ movie, onClose }) {
+function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const startTimeRef = useRef(Date.now())
+  const progressIntervalRef = useRef(null)
   
-  // More reliable sources - these should work on deployed sites
   const sources = [
     {
       name: 'VidSrc.to',
@@ -53,12 +55,41 @@ function VideoPlayer({ movie, onClose }) {
 
   useEffect(() => {
     setLoading(true)
+    setError(false)
     const timer = setTimeout(() => setLoading(false), 3000)
     return () => clearTimeout(timer)
   }, [selectedSource])
 
+  useEffect(() => {
+    // Track watch progress every 30 seconds
+    progressIntervalRef.current = setInterval(() => {
+      const watchedTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
+      if (onUpdateProgress && watchedTime > 10) { // Only save if watched more than 10 seconds
+        onUpdateProgress(movie, watchedTime)
+      }
+    }, 30000) // Update every 30 seconds
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+      // Save final progress on unmount
+      const finalWatchedTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
+      if (onUpdateProgress && finalWatchedTime > 10) {
+        onUpdateProgress(movie, finalWatchedTime)
+      }
+    }
+  }, [movie, onUpdateProgress])
+
   const handleSourceChange = (index) => {
     setSelectedSource(index)
+    // Reset start time when changing source
+    startTimeRef.current = Date.now()
+  }
+
+  const handleIframeError = () => {
+    setError(true)
+    setLoading(false)
   }
 
   return (
@@ -87,6 +118,19 @@ function VideoPlayer({ movie, onClose }) {
               </div>
             )}
             
+            {error && !loading && (
+              <div className="video-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <h3>Source unavailable</h3>
+                <p>This source couldn't load the video.</p>
+                <p className="error-hint">Try selecting a different source from the list →</p>
+              </div>
+            )}
+            
             <iframe
               key={`${selectedSource}-${movie.id}`}
               src={sources[selectedSource].url}
@@ -97,8 +141,9 @@ function VideoPlayer({ movie, onClose }) {
                 console.log(`Loaded source ${selectedSource}: ${sources[selectedSource].name}`)
                 setLoading(false)
               }}
+              onError={handleIframeError}
               style={{ 
-                display: loading ? 'none' : 'block',
+                display: (loading || error) ? 'none' : 'block',
                 width: '100%',
                 height: '100%',
                 border: 'none'
@@ -131,11 +176,11 @@ function VideoPlayer({ movie, onClose }) {
                     <span className="source-name">{source.name}</span>
                     {selectedSource === index && (
                       <span className="source-status">
-                        {loading ? '⏳ Loading...' : '✓ Active'}
+                        {loading ? '⏳ Loading...' : error ? '❌ Failed' : '✓ Active'}
                       </span>
                     )}
                   </div>
-                  {selectedSource === index && !loading && (
+                  {selectedSource === index && !loading && !error && (
                     <div className="source-pulse"></div>
                   )}
                 </button>
