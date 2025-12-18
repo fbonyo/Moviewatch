@@ -17,7 +17,7 @@ function Hero({ movies, onSelectMovie }) {
       <div className="hero-new-content">
         <div className="hero-text">
           <h1 className="hero-new-title">
-            Unlimited Movies, TV Shows & More
+            Watch Unlimited Movies, TV Shows & More
           </h1>
           <p className="hero-new-description">
             Stream thousands of movies and shows for free. Watch anywhere, anytime on any device.
