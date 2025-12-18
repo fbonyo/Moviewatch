@@ -1,105 +1,82 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import '../styles/VideoPlayer.css'
 
-function VideoPlayer({ movie, onClose, onUpdateProgress }) {
+function VideoPlayer({ movie, onClose }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const startTimeRef = useRef(Date.now())
-  const progressIntervalRef = useRef(null)
-  
+  const [selectedSeason, setSelectedSeason] = useState(1)
+  const [selectedEpisode, setSelectedEpisode] = useState(1)
+
   const sources = [
     {
       name: 'VidSrc.to',
-      url: movie.type === 'tv' 
-        ? `https://vidsrc.to/embed/tv/${movie.id}/1/1`
+      url: movie.type === 'tv'
+        ? `https://vidsrc.to/embed/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`
         : `https://vidsrc.to/embed/movie/${movie.id}`
     },
     {
       name: 'VidSrc.xyz',
       url: movie.type === 'tv'
-        ? `https://vidsrc.xyz/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${movie.id}&season=${selectedSeason}&episode=${selectedEpisode}`
         : `https://vidsrc.xyz/embed/movie?tmdb=${movie.id}`
     },
     {
       name: 'VidSrc.me',
       url: movie.type === 'tv'
-        ? `https://vidsrc.me/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+        ? `https://vidsrc.me/embed/tv?tmdb=${movie.id}&season=${selectedSeason}&episode=${selectedEpisode}`
         : `https://vidsrc.me/embed/movie?tmdb=${movie.id}`
     },
     {
       name: 'Embed.su',
       url: movie.type === 'tv'
-        ? `https://embed.su/embed/tv/${movie.id}/1/1`
+        ? `https://embed.su/embed/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`
         : `https://embed.su/embed/movie/${movie.id}`
     },
     {
       name: 'VidLink Pro',
       url: movie.type === 'tv'
-        ? `https://vidlink.pro/tv/${movie.id}?s=1&e=1`
+        ? `https://vidlink.pro/tv/${movie.id}?s=${selectedSeason}&e=${selectedEpisode}`
         : `https://vidlink.pro/movie/${movie.id}`
     },
     {
       name: 'Movie API',
       url: movie.type === 'tv'
-        ? `https://moviesapi.club/tv/${movie.id}-1-1`
+        ? `https://moviesapi.club/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`
         : `https://moviesapi.club/movie/${movie.id}`
     },
     {
       name: '2Embed',
       url: movie.type === 'tv'
-        ? `https://www.2embed.cc/embedtv/${movie.id}&s=1&e=1`
+        ? `https://www.2embed.cc/embedtv/${movie.id}&s=${selectedSeason}&e=${selectedEpisode}`
         : `https://www.2embed.cc/embed/${movie.id}`
     }
   ]
 
   useEffect(() => {
     setLoading(true)
-    setError(false)
-    const timer = setTimeout(() => setLoading(false), 3000)
+    const timer = setTimeout(() => setLoading(false), 2000)
     return () => clearTimeout(timer)
-  }, [selectedSource])
+  }, [selectedSource, selectedSeason, selectedEpisode])
 
-  useEffect(() => {
-    // Track watch progress every 30 seconds
-    progressIntervalRef.current = setInterval(() => {
-      const watchedTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
-      if (onUpdateProgress && watchedTime > 10) { // Only save if watched more than 10 seconds
-        onUpdateProgress(movie, watchedTime)
-      }
-    }, 30000) // Update every 30 seconds
-
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-      // Save final progress on unmount
-      const finalWatchedTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
-      if (onUpdateProgress && finalWatchedTime > 10) {
-        onUpdateProgress(movie, finalWatchedTime)
-      }
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose()
     }
-  }, [movie, onUpdateProgress])
-
-  const handleSourceChange = (index) => {
-    setSelectedSource(index)
-    // Reset start time when changing source
-    startTimeRef.current = Date.now()
   }
 
-  const handleIframeError = () => {
-    setError(true)
-    setLoading(false)
+  const handleSeasonChange = (season) => {
+    setSelectedSeason(season)
+    setSelectedEpisode(1)
   }
 
   return (
-    <div className="video-player-overlay" onClick={onClose}>
+    <div className="video-player-overlay" onClick={handleOverlayClick}>
       <div className="video-player-container" onClick={(e) => e.stopPropagation()}>
         <div className="video-player-header">
           <div className="video-player-title">
             <h2>{movie.title}</h2>
             <span className="video-player-meta">
-              {movie.year} • {movie.type === 'tv' ? 'TV Show (S1 E1)' : 'Movie'}
+              {movie.year} • {movie.type === 'tv' ? `TV Show (S${selectedSeason} E${selectedEpisode})` : 'Movie'}
             </span>
           </div>
           <button className="video-player-close" onClick={onClose}>✕</button>
@@ -111,39 +88,16 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               <div className="video-player-loading">
                 <div className="loading-spinner"></div>
                 <p>Loading {sources[selectedSource].name}...</p>
-                <span className="loading-source">Finding best quality stream...</span>
-                <div className="loading-tip">
-                  💡 Tip: If this source doesn't load, try another from the list →
-                </div>
-              </div>
-            )}
-            
-            {error && !loading && (
-              <div className="video-error">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <h3>Source unavailable</h3>
-                <p>This source couldn't load the video.</p>
-                <p className="error-hint">Try selecting a different source from the list →</p>
               </div>
             )}
             
             <iframe
-              key={`${selectedSource}-${movie.id}`}
+              key={`${selectedSource}-${selectedSeason}-${selectedEpisode}`}
               src={sources[selectedSource].url}
               allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              referrerPolicy="origin"
-              onLoad={() => {
-                console.log(`Loaded source ${selectedSource}: ${sources[selectedSource].name}`)
-                setLoading(false)
-              }}
-              onError={handleIframeError}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               style={{ 
-                display: (loading || error) ? 'none' : 'block',
+                display: loading ? 'none' : 'block',
                 width: '100%',
                 height: '100%',
                 border: 'none'
@@ -152,6 +106,28 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
           </div>
 
           <div className="video-sources-sidebar">
+            {movie.type === 'tv' && (
+              <div className="episode-selector">
+                <h3>Select Episode</h3>
+                <div className="season-selector">
+                  <label>Season:</label>
+                  <select value={selectedSeason} onChange={(e) => handleSeasonChange(Number(e.target.value))}>
+                    {[...Array(10)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>Season {i + 1}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="episode-selector-grid">
+                  <label>Episode:</label>
+                  <select value={selectedEpisode} onChange={(e) => setSelectedEpisode(Number(e.target.value))}>
+                    {[...Array(24)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>Episode {i + 1}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div className="sources-header">
               <h3>Video Sources</h3>
               <span className="sources-count">{sources.length} available</span>
@@ -161,7 +137,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
-              <p>Click different sources if one doesn't work. Each searches different servers.</p>
+              <p>Click different sources if one doesn't work.</p>
             </div>
             
             <div className="sources-list">
@@ -169,20 +145,13 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
                 <button
                   key={index}
                   className={`source-btn ${selectedSource === index ? 'active' : ''}`}
-                  onClick={() => handleSourceChange(index)}
+                  onClick={() => setSelectedSource(index)}
                 >
                   <span className="source-number">{index + 1}</span>
                   <div className="source-content">
                     <span className="source-name">{source.name}</span>
-                    {selectedSource === index && (
-                      <span className="source-status">
-                        {loading ? '⏳ Loading...' : error ? '❌ Failed' : '✓ Active'}
-                      </span>
-                    )}
+                    {selectedSource === index && <span className="source-status">✓ Active</span>}
                   </div>
-                  {selectedSource === index && !loading && !error && (
-                    <div className="source-pulse"></div>
-                  )}
                 </button>
               ))}
             </div>
@@ -190,9 +159,9 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
             <div className="sources-info">
               <h4>📺 How to Watch</h4>
               <ol>
+                <li>Select season and episode for TV shows</li>
                 <li>Wait for the player to load (3-10 seconds)</li>
                 <li>If you see a blank screen, try sources 2-7</li>
-                <li>Some movies/shows may not be available yet</li>
                 <li>Player controls appear inside the video frame</li>
               </ol>
               
