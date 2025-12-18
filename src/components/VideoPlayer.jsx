@@ -116,6 +116,12 @@ function VideoPlayer({ movie, onClose }) {
     <div className="video-player-overlay" onClick={handleOverlayClick}>
       <div className="video-player-container" onClick={(e) => e.stopPropagation()}>
         <div className="video-player-header">
+          <button className="back-button" onClick={onClose}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+          </button>
           <div className="video-player-title">
             <h2>{movie.title}</h2>
             <span className="video-player-meta">

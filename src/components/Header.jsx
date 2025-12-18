@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import NotificationPanel from './NotificationPanel'
 import '../styles/Header.css'
 
 function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection }) {
   const [scrolled, setScrolled] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(0)
+  const [hasNewNotifications, setHasNewNotifications] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +30,40 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
     setSearchQuery('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const handleMovieSelect = (movie) => {
+    window.dispatchEvent(new CustomEvent('openMovie', { detail: movie }))
+  }
+
+  const handleNotificationUpdate = (count) => {
+    setNotificationCount(count)
+    if (count > 0) {
+      setHasNewNotifications(true)
+      // Show browser notification if supported
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('MovieWatch', {
+          body: `${count} new content available!`,
+          icon: '/vite.svg'
+        })
+      }
+    } else {
+      setHasNewNotifications(false)
+    }
+  }
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications)
+    if (!showNotifications) {
+      setHasNewNotifications(false)
+    }
+  }
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
 
   return (
     <header className={`header ${scrolled ? 'scrolled' : ''}`}>
@@ -103,15 +141,29 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
             )}
           </button>
 
-          <button className="notification-btn">
+          <button 
+            className={`notification-btn ${hasNewNotifications ? 'has-new' : ''}`}
+            onClick={handleNotificationClick}
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <span className="notification-dot"></span>
+            {notificationCount > 0 && (
+              <span className="notification-count">{notificationCount}</span>
+            )}
+            {hasNewNotifications && <span className="notification-dot"></span>}
           </button>
         </div>
       </div>
+      
+      {showNotifications && (
+        <NotificationPanel 
+          onClose={() => setShowNotifications(false)}
+          onSelectMovie={handleMovieSelect}
+          onNotificationUpdate={handleNotificationUpdate}
+        />
+      )}
     </header>
   )
 }

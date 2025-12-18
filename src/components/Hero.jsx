@@ -4,6 +4,14 @@ import '../styles/Hero.css'
 function Hero({ movies, onSelectMovie }) {
   const displayMovies = movies.slice(0, 15)
 
+  const handleStartWatching = () => {
+    // Scroll to trending content section
+    const trendingSection = document.querySelector('.movie-grid-container')
+    if (trendingSection) {
+      trendingSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <div className="hero-new">
       <div className="hero-new-content">
@@ -15,14 +23,11 @@ function Hero({ movies, onSelectMovie }) {
             Stream thousands of movies and shows for free. Watch anywhere, anytime on any device.
           </p>
           <div className="hero-new-buttons">
-            <button className="btn-new btn-new-primary">
+            <button className="btn-new btn-new-primary" onClick={handleStartWatching}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
               </svg>
               Start Watching Free
-            </button>
-            <button className="btn-new btn-new-secondary">
-              Learn More
             </button>
           </div>
         </div>

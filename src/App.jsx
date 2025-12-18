@@ -8,6 +8,8 @@ import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
 import TrendingMovies from './components/TrendingMovies'
 import TrendingShows from './components/TrendingShows'
+import TopShows from './components/TopShows'
+import TopMovies from './components/TopMovies'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -314,7 +316,17 @@ function App() {
             watchlist={watchlist}
             onToggleWatchlist={toggleWatchlist}
           />
+          <TopMovies 
+            onSelectMovie={setSelectedMovie}
+            watchlist={watchlist}
+            onToggleWatchlist={toggleWatchlist}
+          />
           <TrendingShows 
+            onSelectMovie={setSelectedMovie}
+            watchlist={watchlist}
+            onToggleWatchlist={toggleWatchlist}
+          />
+          <TopShows 
             onSelectMovie={setSelectedMovie}
             watchlist={watchlist}
             onToggleWatchlist={toggleWatchlist}

@@ -20,20 +20,27 @@ function TrendingMovies({ onSelectMovie, watchlist, onToggleWatchlist }) {
       )
       const data = await response.json()
 
-      const formattedMovies = data.results.slice(0, 12).map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date?.split('-')[0] || 'N/A',
-        rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-          : 'https://via.placeholder.com/500x750',
-        description: movie.overview || 'No description available.',
-        backdrop_url: movie.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-          : null,
-        type: 'movie'
-      }))
+      const formattedMovies = data.results
+        .filter(movie => {
+          // Filter out movies older than 2015 from trending
+          const year = movie.release_date?.split('-')[0]
+          return year && parseInt(year) >= 2015
+        })
+        .slice(0, 12)
+        .map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          year: movie.release_date?.split('-')[0] || 'N/A',
+          rating: movie.vote_average?.toFixed(1) || 'N/A',
+          poster_url: movie.poster_path
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : 'https://via.placeholder.com/500x750',
+          description: movie.overview || 'No description available.',
+          backdrop_url: movie.backdrop_path
+            ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+            : null,
+          type: 'movie'
+        }))
 
       setMovies(formattedMovies)
     } catch (error) {
