@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import '../styles/VideoPlayer.css'
 
+const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
+
 function VideoPlayer({ movie, onClose }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedSeason, setSelectedSeason] = useState(1)
   const [selectedEpisode, setSelectedEpisode] = useState(1)
+  const [tvDetails, setTvDetails] = useState(null)
+  const [seasonDetails, setSeasonDetails] = useState(null)
 
   const sources = [
     {
@@ -53,10 +57,46 @@ function VideoPlayer({ movie, onClose }) {
   ]
 
   useEffect(() => {
+    if (movie.type === 'tv') {
+      fetchTVDetails()
+    }
+  }, [movie.id])
+
+  useEffect(() => {
+    if (movie.type === 'tv' && selectedSeason) {
+      fetchSeasonDetails()
+    }
+  }, [selectedSeason])
+
+  useEffect(() => {
     setLoading(true)
     const timer = setTimeout(() => setLoading(false), 2000)
     return () => clearTimeout(timer)
   }, [selectedSource, selectedSeason, selectedEpisode])
+
+  const fetchTVDetails = async () => {
+    try {
+      const response = await fetch(
+        `https://api.themoviedb.org/3/tv/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`
+      )
+      const data = await response.json()
+      setTvDetails(data)
+    } catch (error) {
+      console.error('Error fetching TV details:', error)
+    }
+  }
+
+  const fetchSeasonDetails = async () => {
+    try {
+      const response = await fetch(
+        `https://api.themoviedb.org/3/tv/${movie.id}/season/${selectedSeason}?api_key=${TMDB_API_KEY}&language=en-US`
+      )
+      const data = await response.json()
+      setSeasonDetails(data)
+    } catch (error) {
+      console.error('Error fetching season details:', error)
+    }
+  }
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -68,6 +108,9 @@ function VideoPlayer({ movie, onClose }) {
     setSelectedSeason(season)
     setSelectedEpisode(1)
   }
+
+  const numberOfSeasons = tvDetails?.number_of_seasons || 1
+  const numberOfEpisodes = seasonDetails?.episodes?.length || 1
 
   return (
     <div className="video-player-overlay" onClick={handleOverlayClick}>
@@ -112,7 +155,7 @@ function VideoPlayer({ movie, onClose }) {
                 <div className="season-selector">
                   <label>Season:</label>
                   <select value={selectedSeason} onChange={(e) => handleSeasonChange(Number(e.target.value))}>
-                    {[...Array(10)].map((_, i) => (
+                    {[...Array(numberOfSeasons)].map((_, i) => (
                       <option key={i + 1} value={i + 1}>Season {i + 1}</option>
                     ))}
                   </select>
@@ -120,8 +163,11 @@ function VideoPlayer({ movie, onClose }) {
                 <div className="episode-selector-grid">
                   <label>Episode:</label>
                   <select value={selectedEpisode} onChange={(e) => setSelectedEpisode(Number(e.target.value))}>
-                    {[...Array(24)].map((_, i) => (
-                      <option key={i + 1} value={i + 1}>Episode {i + 1}</option>
+                    {[...Array(numberOfEpisodes)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Episode {i + 1}
+                        {seasonDetails?.episodes?.[i]?.name ? ` - ${seasonDetails.episodes[i].name}` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
