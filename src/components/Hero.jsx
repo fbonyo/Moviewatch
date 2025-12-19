@@ -1,15 +1,12 @@
 import React from 'react'
+import SkeletonLoader from './SkeletonLoader'
 import '../styles/Hero.css'
 
 function Hero({ movies, onSelectMovie }) {
   const displayMovies = movies.slice(0, 15)
 
-  const handleStartWatching = () => {
-    // Scroll to trending content section
-    const trendingSection = document.querySelector('.movie-grid-container')
-    if (trendingSection) {
-      trendingSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  if (displayMovies.length === 0) {
+    return <SkeletonLoader type="hero" count={1} />
   }
 
   return (
@@ -17,17 +14,20 @@ function Hero({ movies, onSelectMovie }) {
       <div className="hero-new-content">
         <div className="hero-text">
           <h1 className="hero-new-title">
-            Watch Unlimited Movies, TV Shows & More
+            Unlimited Movies, TV Shows & More
           </h1>
           <p className="hero-new-description">
             Stream thousands of movies and shows for free. Watch anywhere, anytime on any device.
           </p>
           <div className="hero-new-buttons">
-            <button className="btn-new btn-new-primary" onClick={handleStartWatching}>
+            <button className="btn-new btn-new-primary">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
               </svg>
               Start Watching Free
+            </button>
+            <button className="btn-new btn-new-secondary">
+              Learn More
             </button>
           </div>
         </div>
@@ -46,6 +46,7 @@ function Hero({ movies, onSelectMovie }) {
                 <img 
                   src={movie.poster_url || 'https://via.placeholder.com/200x300'} 
                   alt={movie.title}
+                  loading="lazy"
                 />
                 <div className="showcase-overlay">
                   <span>{movie.title}</span>

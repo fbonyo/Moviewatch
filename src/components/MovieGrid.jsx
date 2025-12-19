@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import MovieCard from './MovieCard'
+import SkeletonLoader from './SkeletonLoader'
 import '../styles/MovieGrid.css'
 
 function MovieGrid({ movies, loading, onSelectMovie, watchlist, onToggleWatchlist, title = "Trending Now" }) {
@@ -76,9 +77,9 @@ function MovieGrid({ movies, loading, onSelectMovie, watchlist, onToggleWatchlis
   if (loading) {
     return (
       <div className="movie-grid-container">
-        <div className="loading">
-          <div className="loading-spinner"></div>
-          <p>Loading amazing content...</p>
+        <h2 className="section-title">{title}</h2>
+        <div className="movie-grid">
+          <SkeletonLoader type="card" count={20} />
         </div>
       </div>
     )

@@ -4,6 +4,7 @@ import '../styles/MovieCard.css'
 function MovieCard({ movie, onClick, isInWatchlist, onToggleWatchlist }) {
   const cardRef = useRef(null)
   const [transform, setTransform] = useState('')
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return
@@ -42,9 +43,17 @@ function MovieCard({ movie, onClick, isInWatchlist, onToggleWatchlist }) {
     >
       <div className="movie-card-inner">
         <div className="movie-card-image">
+          {!imageLoaded && (
+            <div className="image-placeholder">
+              <div className="image-loading"></div>
+            </div>
+          )}
           <img 
             src={movie.poster_url || movie.cover_url || 'https://via.placeholder.com/300x450'} 
-            alt={movie.title} 
+            alt={movie.title}
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
           />
           <div className="movie-card-overlay">
             <button className="play-btn">

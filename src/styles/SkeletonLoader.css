@@ -1,0 +1,354 @@
+/* Base Skeleton Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-card,
+.skeleton-hero,
+.skeleton-modal,
+.skeleton-continue {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Skeleton Card (Movie Grid) */
+.skeleton-card {
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+.skeleton-image {
+  aspect-ratio: 2/3;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.skeleton-info {
+  padding: 1.5rem;
+}
+
+.skeleton-title {
+  height: 20px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.skeleton-badge,
+.skeleton-rating {
+  height: 24px;
+  flex: 1;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 20px;
+}
+
+/* Skeleton Hero */
+.skeleton-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-top: 80px;
+  background: var(--bg-primary);
+}
+
+.skeleton-hero-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.skeleton-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-hero-title {
+  height: 60px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-hero-title.short {
+  width: 70%;
+}
+
+.skeleton-hero-description {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-hero-description.short {
+  width: 60%;
+}
+
+.skeleton-hero-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.skeleton-button {
+  height: 50px;
+  width: 200px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 50px;
+}
+
+.skeleton-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+.skeleton-hero-card {
+  aspect-ratio: 2/3;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 12px;
+}
+
+/* Skeleton Modal */
+.skeleton-modal {
+  width: 100%;
+}
+
+.skeleton-modal-hero {
+  height: 450px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 24px 24px 0 0;
+}
+
+.skeleton-modal-content {
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-modal-title {
+  height: 48px;
+  width: 60%;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-modal-meta {
+  display: flex;
+  gap: 1rem;
+}
+
+.skeleton-modal-description {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-modal-description.short {
+  width: 70%;
+}
+
+/* Skeleton Continue Watching */
+.skeleton-continue {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+}
+
+.skeleton-continue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-continue-title {
+  height: 32px;
+  width: 250px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-continue-grid {
+  display: flex;
+  gap: 1.5rem;
+  overflow: hidden;
+}
+
+.skeleton-continue-card {
+  flex: 0 0 280px;
+}
+
+.skeleton-continue-image {
+  aspect-ratio: 16/9;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-continue-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-continue-text {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg) 0%,
+    var(--glass-border) 50%,
+    var(--glass-bg) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-continue-text.short {
+  width: 60%;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .skeleton-hero-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  
+  .skeleton-hero-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .skeleton-hero-title {
+    height: 40px;
+  }
+  
+  .skeleton-hero-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .skeleton-button {
+    width: 150px;
+    height: 44px;
+  }
+  
+  .skeleton-modal-hero {
+    height: 300px;
+  }
+  
+  .skeleton-continue-card {
+    flex: 0 0 240px;
+  }
+}
