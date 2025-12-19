@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import SeasonEpisodeSelector from './SeasonEpisodeSelector'
 import '../styles/VideoPlayer.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -17,6 +18,8 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const [credits, setCredits] = useState(null)
   const [similarContent, setSimilarContent] = useState([])
   const [loadingSimilar, setLoadingSimilar] = useState(true)
+  const [currentSeason, setCurrentSeason] = useState(1)
+  const [currentEpisode, setCurrentEpisode] = useState(1)
   const startTimeRef = useRef(Date.now())
   const progressIntervalRef = useRef(null)
   const pipRef = useRef(null)
@@ -25,71 +28,71 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const sources = [
     {
       name: 'VidSrc.to',
-      url: movie.type === 'tv' 
-        ? `https://vidsrc.to/embed/tv/${movie.id}/1/1`
+      getUrl: () => movie.type === 'tv' 
+        ? `https://vidsrc.to/embed/tv/${movie.id}/${currentSeason}/${currentEpisode}`
         : `https://vidsrc.to/embed/movie/${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'VidSrc.xyz',
-      url: movie.type === 'tv'
-        ? `https://vidsrc.xyz/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${movie.id}&season=${currentSeason}&episode=${currentEpisode}`
         : `https://vidsrc.xyz/embed/movie?tmdb=${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'SuperEmbed',
-      url: movie.type === 'tv'
-        ? `https://multiembed.mov/?video_id=${movie.id}&tmdb=1&s=1&e=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://multiembed.mov/?video_id=${movie.id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
         : `https://multiembed.mov/?video_id=${movie.id}&tmdb=1`,
       quality: 'HD'
     },
     {
       name: 'VidSrc.me',
-      url: movie.type === 'tv'
-        ? `https://vidsrc.me/embed/tv?tmdb=${movie.id}&season=1&episode=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://vidsrc.me/embed/tv?tmdb=${movie.id}&season=${currentSeason}&episode=${currentEpisode}`
         : `https://vidsrc.me/embed/movie?tmdb=${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'Embed.su',
-      url: movie.type === 'tv'
-        ? `https://embed.su/embed/tv/${movie.id}/1/1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://embed.su/embed/tv/${movie.id}/${currentSeason}/${currentEpisode}`
         : `https://embed.su/embed/movie/${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'VidLink Pro',
-      url: movie.type === 'tv'
-        ? `https://vidlink.pro/tv/${movie.id}?s=1&e=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://vidlink.pro/tv/${movie.id}?s=${currentSeason}&e=${currentEpisode}`
         : `https://vidlink.pro/movie/${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'Smashystream',
-      url: movie.type === 'tv'
-        ? `https://player.smashy.stream/tv/${movie.id}?s=1&e=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://player.smashy.stream/tv/${movie.id}?s=${currentSeason}&e=${currentEpisode}`
         : `https://player.smashy.stream/movie/${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'Movie API',
-      url: movie.type === 'tv'
-        ? `https://moviesapi.club/tv/${movie.id}-1-1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://moviesapi.club/tv/${movie.id}-${currentSeason}-${currentEpisode}`
         : `https://moviesapi.club/movie/${movie.id}`,
       quality: 'HD'
     },
     {
       name: '2Embed',
-      url: movie.type === 'tv'
-        ? `https://www.2embed.cc/embedtv/${movie.id}&s=1&e=1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://www.2embed.cc/embedtv/${movie.id}&s=${currentSeason}&e=${currentEpisode}`
         : `https://www.2embed.cc/embed/${movie.id}`,
       quality: 'HD'
     },
     {
       name: 'AutoEmbed',
-      url: movie.type === 'tv'
-        ? `https://autoembed.cc/tv/tmdb/${movie.id}-1-1`
+      getUrl: () => movie.type === 'tv'
+        ? `https://autoembed.cc/tv/tmdb/${movie.id}-${currentSeason}-${currentEpisode}`
         : `https://autoembed.cc/movie/tmdb/${movie.id}`,
       quality: 'HD'
     }
@@ -100,6 +103,21 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
     fetchCredits()
     fetchSimilarContent()
   }, [movie.id, movie.type])
+
+  useEffect(() => {
+    // Reload video when season/episode changes
+    setLoading(true)
+    setError(false)
+    const timer = setTimeout(() => setLoading(false), 3000)
+    return () => clearTimeout(timer)
+  }, [currentSeason, currentEpisode, selectedSource])
+
+  const handleEpisodeSelect = (season, episode) => {
+    setCurrentSeason(season)
+    setCurrentEpisode(episode)
+    // Scroll to top to see the video
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const fetchMovieDetails = async () => {
     try {
@@ -212,13 +230,6 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
       }
     }
   }, [])
-
-  useEffect(() => {
-    setLoading(true)
-    setError(false)
-    const timer = setTimeout(() => setLoading(false), 3000)
-    return () => clearTimeout(timer)
-  }, [selectedSource])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -377,6 +388,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
 
   const director = credits?.crew?.find(person => person.job === 'Director')
   const cast = credits?.cast?.slice(0, 6)
+  const currentVideoUrl = sources[selectedSource].getUrl()
 
   if (isPiP) {
     return (
@@ -391,7 +403,9 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
         onMouseDown={handlePipMouseDown}
       >
         <div className="pip-header">
-          <span className="pip-title">{movie.title}</span>
+          <span className="pip-title">
+            {movie.title} {movie.type === 'tv' && `- S${currentSeason}E${currentEpisode}`}
+          </span>
           <div className="pip-controls">
             <button 
               className="pip-btn pip-expand" 
@@ -416,8 +430,8 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
         </div>
         <div className="pip-video">
           <iframe
-            key={`pip-${selectedSource}-${movie.id}`}
-            src={sources[selectedSource].url}
+            key={`pip-${selectedSource}-${movie.id}-${currentSeason}-${currentEpisode}`}
+            src={currentVideoUrl}
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             referrerPolicy="origin"
@@ -442,7 +456,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
             <div className="video-player-title">
               <h2>{movie.title}</h2>
               <span className="video-player-meta">
-                {movie.year} • {movie.type === 'tv' ? 'TV Show (S1 E1)' : 'Movie'}
+                {movie.year} • {movie.type === 'tv' ? `TV Show - S${currentSeason}E${currentEpisode}` : 'Movie'}
               </span>
             </div>
             <div className="video-player-controls">
@@ -476,10 +490,12 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
                 <div className="loading-spinner"></div>
                 <p>Loading {sources[selectedSource].name}...</p>
                 <span className="loading-source">
-                  {autoQuality ? `Optimizing for ${connectionSpeed} speed...` : 'Finding best quality stream...'}
+                  {movie.type === 'tv' 
+                    ? `Loading S${currentSeason}E${currentEpisode}...` 
+                    : autoQuality ? `Optimizing for ${connectionSpeed} speed...` : 'Finding best quality stream...'}
                 </span>
                 <div className="loading-tip">
-                  💡 Scroll down for more info • Press P for Picture-in-Picture
+                  💡 Scroll down for episodes • Press P for Picture-in-Picture
                 </div>
               </div>
             )}
@@ -498,13 +514,13 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
             )}
             
             <iframe
-              key={`${selectedSource}-${movie.id}`}
-              src={sources[selectedSource].url}
+              key={`${selectedSource}-${movie.id}-${currentSeason}-${currentEpisode}`}
+              src={currentVideoUrl}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               referrerPolicy="origin"
               onLoad={() => {
-                console.log(`Loaded source ${selectedSource}: ${sources[selectedSource].name}`)
+                console.log(`Loaded ${sources[selectedSource].name}: S${currentSeason}E${currentEpisode}`)
                 setLoading(false)
               }}
               onError={handleIframeError}
@@ -521,6 +537,17 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
         {/* Scrollable Content Below */}
         <div className="video-player-info-section">
           <div className="video-info-container">
+            
+            {/* Season/Episode Selector for TV Shows */}
+            {movie.type === 'tv' && (
+              <SeasonEpisodeSelector 
+                tvShow={movie}
+                onEpisodeSelect={handleEpisodeSelect}
+                currentSeason={currentSeason}
+                currentEpisode={currentEpisode}
+              />
+            )}
+
             {/* Movie Description */}
             <div className="video-info-block">
               <h3 className="video-info-title">About {movie.title}</h3>
