@@ -6,6 +6,7 @@ import MovieGrid from './components/MovieGrid'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
+import ContinueWatching from './components/ContinueWatching'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -19,6 +20,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState([])
+  const [continueWatching, setContinueWatching] = useState([])
   const [theme, setTheme] = useState('dark')
   const [activeSection, setActiveSection] = useState('home')
   const [currentPage, setCurrentPage] = useState(1)
@@ -27,6 +29,7 @@ function App() {
 
   useEffect(() => {
     loadWatchlist()
+    loadContinueWatching()
     loadTheme()
     fetchLatestMovies(1, null)
     fetchLatestTVShows(1, null)
@@ -60,6 +63,60 @@ function App() {
       await window.storage.set('theme', theme)
     } catch (error) {
       console.error('Error saving theme:', error)
+    }
+  }
+
+  const loadContinueWatching = async () => {
+    try {
+      const result = await window.storage.get('continueWatching')
+      if (result) {
+        setContinueWatching(JSON.parse(result.value))
+      }
+    } catch (error) {
+      console.log('No continue watching data found')
+    }
+  }
+
+  const updateWatchProgress = async (movie, watchedTime) => {
+    try {
+      const existingIndex = continueWatching.findIndex(
+        item => item.id === movie.id && item.type === movie.type
+      )
+
+      const updatedItem = {
+        ...movie,
+        watchedTime,
+        totalTime: movie.type === 'tv' ? 2400 : 7200, // 40 min for TV, 2 hours for movies
+        lastWatched: new Date().toISOString()
+      }
+
+      let newContinueWatching
+      if (existingIndex >= 0) {
+        newContinueWatching = [...continueWatching]
+        newContinueWatching[existingIndex] = updatedItem
+      } else {
+        newContinueWatching = [updatedItem, ...continueWatching]
+      }
+
+      // Keep only last 20 items
+      newContinueWatching = newContinueWatching.slice(0, 20)
+
+      setContinueWatching(newContinueWatching)
+      await window.storage.set('continueWatching', JSON.stringify(newContinueWatching))
+    } catch (error) {
+      console.error('Error updating watch progress:', error)
+    }
+  }
+
+  const removeFromContinueWatching = async (movie) => {
+    try {
+      const newContinueWatching = continueWatching.filter(
+        item => !(item.id === movie.id && item.type === movie.type)
+      )
+      setContinueWatching(newContinueWatching)
+      await window.storage.set('continueWatching', JSON.stringify(newContinueWatching))
+    } catch (error) {
+      console.error('Error removing from continue watching:', error)
     }
   }
 
@@ -317,7 +374,16 @@ function App() {
         setActiveSection={handleSectionChange}
       />
       {activeSection === 'home' && (
-        <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+        <>
+          <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+          {continueWatching.length > 0 && (
+            <ContinueWatching 
+              continueWatching={continueWatching}
+              onSelectMovie={handlePlayMovie}
+              onRemove={removeFromContinueWatching}
+            />
+          )}
+        </>
       )}
       {showGenreFilter && (
         <GenreFilter 
@@ -354,6 +420,7 @@ function App() {
         <VideoPlayer 
           movie={playingMovie}
           onClose={() => setPlayingMovie(null)}
+          onUpdateProgress={updateWatchProgress}
         />
       )}
     </div>

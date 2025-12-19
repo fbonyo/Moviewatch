@@ -33,7 +33,7 @@ function ContinueWatching({ continueWatching, onSelectMovie, onRemove }) {
           {continueWatching.map((item) => (
             <div key={`${item.type}-${item.id}`} className="continue-card">
               <div className="continue-poster" onClick={() => onSelectMovie(item)}>
-                <img src={item.poster_url} alt={item.title} />
+                <img src={item.backdrop_url || item.poster_url} alt={item.title} />
                 <div className="continue-overlay">
                   <button className="continue-play-btn">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">

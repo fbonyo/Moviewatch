@@ -15,6 +15,18 @@ function MovieModal({ movie, onClose, isInWatchlist, onToggleWatchlist, onPlayMo
     fetchSimilarContent()
   }, [movie.id, movie.type])
 
+  // Keyboard shortcut: ESC to close modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const fetchTrailer = async () => {
     setLoading(true)
     try {

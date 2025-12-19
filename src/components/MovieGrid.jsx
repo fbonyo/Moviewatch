@@ -1,8 +1,78 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import MovieCard from './MovieCard'
 import '../styles/MovieGrid.css'
 
 function MovieGrid({ movies, loading, onSelectMovie, watchlist, onToggleWatchlist, title = "Trending Now" }) {
+  const gridRef = useRef(null)
+  const selectedIndexRef = useRef(0)
+
+  // Keyboard navigation: Arrow keys
+  useEffect(() => {
+    if (movies.length === 0) return
+
+    const handleKeyDown = (e) => {
+      // Only handle arrow keys if we're not in an input field
+      if (document.activeElement.tagName === 'INPUT') return
+
+      const currentIndex = selectedIndexRef.current
+      let newIndex = currentIndex
+
+      // Calculate grid columns based on screen width
+      const getColumns = () => {
+        const width = window.innerWidth
+        if (width >= 1200) return 6
+        if (width >= 992) return 5
+        if (width >= 768) return 4
+        if (width >= 576) return 3
+        return 2
+      }
+
+      const columns = getColumns()
+
+      switch(e.key) {
+        case 'ArrowRight':
+          e.preventDefault()
+          newIndex = Math.min(currentIndex + 1, movies.length - 1)
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          newIndex = Math.max(currentIndex - 1, 0)
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          newIndex = Math.min(currentIndex + columns, movies.length - 1)
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          newIndex = Math.max(currentIndex - columns, 0)
+          break
+        case 'Enter':
+          e.preventDefault()
+          if (movies[currentIndex]) {
+            onSelectMovie(movies[currentIndex])
+          }
+          return
+        default:
+          return
+      }
+
+      if (newIndex !== currentIndex) {
+        selectedIndexRef.current = newIndex
+        
+        // Highlight the selected card
+        const cards = gridRef.current?.querySelectorAll('.movie-card')
+        if (cards && cards[newIndex]) {
+          cards.forEach(card => card.classList.remove('keyboard-selected'))
+          cards[newIndex].classList.add('keyboard-selected')
+          cards[newIndex].scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [movies, onSelectMovie])
+
   if (loading) {
     return (
       <div className="movie-grid-container">
@@ -47,7 +117,7 @@ function MovieGrid({ movies, loading, onSelectMovie, watchlist, onToggleWatchlis
   return (
     <div className="movie-grid-container">
       <h2 className="section-title">{title}</h2>
-      <div className="movie-grid">
+      <div className="movie-grid" ref={gridRef}>
         {movies.map((movie, index) => (
           <MovieCard 
             key={`${movie.type}-${movie.id}-${index}`} 

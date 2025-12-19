@@ -267,3 +267,19 @@
     transform: scale(1) rotate(0deg);
   }
 }
+
+/* Keyboard navigation highlight */
+.movie-card.keyboard-selected {
+  outline: 3px solid #667eea;
+  outline-offset: 4px;
+  border-radius: 20px;
+}
+
+.movie-card.keyboard-selected .movie-card-inner {
+  box-shadow: 
+    0 30px 60px rgba(102, 126, 234, 0.6),
+    0 0 0 3px rgba(102, 126, 234, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(102, 126, 234, 0.7);
+  transform: translateY(-5px);
+}
