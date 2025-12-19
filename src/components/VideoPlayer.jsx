@@ -5,8 +5,13 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [isPiP, setIsPiP] = useState(false)
+  const [pipPosition, setPipPosition] = useState({ x: window.innerWidth - 420, y: window.innerHeight - 280 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const startTimeRef = useRef(Date.now())
   const progressIntervalRef = useRef(null)
+  const pipRef = useRef(null)
   
   const sources = [
     {
@@ -88,17 +93,27 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
     return () => clearTimeout(timer)
   }, [selectedSource])
 
-  // Keyboard shortcuts: ESC to close, number keys to switch sources
+  // Keyboard shortcuts: ESC to close, number keys to switch sources, P for PiP
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose()
+        if (isPiP) {
+          setIsPiP(false)
+        } else {
+          onClose()
+        }
+      }
+      
+      // P key for Picture-in-Picture
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault()
+        togglePiP()
       }
       
       // Number keys 1-9 and 0 to switch sources
       const num = parseInt(e.key)
       if (!isNaN(num)) {
-        const sourceIndex = num === 0 ? 9 : num - 1 // 1->0, 2->1, ... 0->9
+        const sourceIndex = num === 0 ? 9 : num - 1
         if (sourceIndex >= 0 && sourceIndex < sources.length) {
           setSelectedSource(sourceIndex)
         }
@@ -107,7 +122,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, sources.length])
+  }, [onClose, sources.length, isPiP])
 
   useEffect(() => {
     // Track watch progress every 30 seconds
@@ -129,6 +144,30 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
     }
   }, [movie, onUpdateProgress])
 
+  // PiP Dragging
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e) => {
+      setPipPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
+
   const handleSourceChange = (index) => {
     setSelectedSource(index)
     startTimeRef.current = Date.now()
@@ -137,6 +176,75 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const handleIframeError = () => {
     setError(true)
     setLoading(false)
+  }
+
+  const togglePiP = () => {
+    setIsPiP(!isPiP)
+  }
+
+  const handlePipMouseDown = (e) => {
+    if (e.target.closest('.pip-controls')) return
+    
+    setIsDragging(true)
+    const rect = pipRef.current.getBoundingClientRect()
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
+  }
+
+  if (isPiP) {
+    return (
+      <div 
+        ref={pipRef}
+        className="pip-player"
+        style={{
+          left: `${pipPosition.x}px`,
+          top: `${pipPosition.y}px`,
+          cursor: isDragging ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={handlePipMouseDown}
+      >
+        <div className="pip-header">
+          <span className="pip-title">{movie.title}</span>
+          <div className="pip-controls">
+            <button 
+              className="pip-btn pip-expand" 
+              onClick={togglePiP}
+              title="Expand (P)"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="15 3 21 3 21 9"/>
+                <polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/>
+                <line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+            <button 
+              className="pip-btn pip-close" 
+              onClick={onClose}
+              title="Close (ESC)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="pip-video">
+          <iframe
+            key={`pip-${selectedSource}-${movie.id}`}
+            src={sources[selectedSource].url}
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            referrerPolicy="origin"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              border: 'none'
+            }}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -149,7 +257,19 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               {movie.year} • {movie.type === 'tv' ? 'TV Show (S1 E1)' : 'Movie'}
             </span>
           </div>
-          <button className="video-player-close" onClick={onClose}>✕</button>
+          <div className="video-player-controls">
+            <button 
+              className="video-player-pip" 
+              onClick={togglePiP}
+              title="Picture-in-Picture (P)"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                <rect x="8" y="10" width="12" height="8" rx="1"/>
+              </svg>
+            </button>
+            <button className="video-player-close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <div className="video-player-content">
@@ -160,7 +280,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
                 <p>Loading {sources[selectedSource].name}...</p>
                 <span className="loading-source">Finding best quality stream...</span>
                 <div className="loading-tip">
-                  💡 Tip: Press 1-9 or 0 to quickly switch sources
+                  💡 Tip: Press P for Picture-in-Picture mode
                 </div>
               </div>
             )}
@@ -208,7 +328,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
-              <p>Press 1-9 or 0 to switch sources quickly. ESC to close.</p>
+              <p>Press 1-9 or 0 to switch sources. Press P for Picture-in-Picture mode.</p>
             </div>
             
             <div className="sources-list">
@@ -238,9 +358,9 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               <h4>⌨️ Keyboard Shortcuts</h4>
               <ol>
                 <li><strong>1-9, 0</strong> → Switch to source 1-10</li>
+                <li><strong>P</strong> → Picture-in-Picture mode</li>
                 <li><strong>ESC</strong> → Close player</li>
                 <li>Wait 3-10 seconds for player to load</li>
-                <li>Player controls appear inside the video frame</li>
               </ol>
               
               <div className="info-note">
