@@ -9,25 +9,30 @@ function Hero({ movies, onSelectMovie }) {
     return <SkeletonLoader type="hero" count={1} />
   }
 
+  const handleStartWatching = () => {
+    // Scroll to movie grid section
+    const movieGrid = document.querySelector('.movie-grid-container')
+    if (movieGrid) {
+      movieGrid.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <div className="hero-new">
       <div className="hero-new-content">
         <div className="hero-text">
           <h1 className="hero-new-title">
-            Unlimited Movies, TV Shows & More
+            Watch Unlimited Movies, TV Shows & More
           </h1>
           <p className="hero-new-description">
             Stream thousands of movies and shows for free. Watch anywhere, anytime on any device.
           </p>
           <div className="hero-new-buttons">
-            <button className="btn-new btn-new-primary">
+            <button className="btn-new btn-new-primary" onClick={handleStartWatching}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
               </svg>
               Start Watching Free
-            </button>
-            <button className="btn-new btn-new-secondary">
-              Learn More
             </button>
           </div>
         </div>

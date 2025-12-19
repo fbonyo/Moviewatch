@@ -345,11 +345,24 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const getQualityText = () => {
     switch(connectionSpeed) {
       case 'high':
-        return 'HD Quality'
+        return '1080p'
       case 'medium':
-        return 'SD Quality'
+        return '720p'
       case 'low':
-        return 'Low Quality'
+        return '480p'
+      default:
+        return 'Auto'
+    }
+  }
+
+  const getQualityDescription = () => {
+    switch(connectionSpeed) {
+      case 'high':
+        return '1080p Quality'
+      case 'medium':
+        return '720p Quality'
+      case 'low':
+        return '480p Quality'
       default:
         return 'Auto Quality'
     }
@@ -422,9 +435,8 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   return (
     <div className="video-player-overlay-new">
       <div className="video-player-scrollable">
-        <button className="video-player-close-floating" onClick={onClose}>✕</button>
         
-        {/* Fixed Video Section */}
+        {/* Video Section */}
         <div className="video-player-fixed-section">
           <div className="video-player-header-new">
             <div className="video-player-title">
@@ -447,6 +459,13 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
                   <rect x="2" y="3" width="20" height="14" rx="2"/>
                   <rect x="8" y="10" width="12" height="8" rx="1"/>
                 </svg>
+              </button>
+              <button 
+                className="video-player-close-btn" 
+                onClick={onClose}
+                title="Close (ESC)"
+              >
+                ✕
               </button>
             </div>
           </div>
@@ -581,7 +600,7 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
                     <span className="connection-speed-inline">
                       {connectionSpeed === 'high' ? 'Fast' : connectionSpeed === 'medium' ? 'Moderate' : 'Slow'} Connection
                     </span>
-                    <span className="connection-quality-inline">{getQualityText()}</span>
+                    <span className="connection-quality-inline">{getQualityDescription()}</span>
                   </div>
                 </div>
                 <button 
