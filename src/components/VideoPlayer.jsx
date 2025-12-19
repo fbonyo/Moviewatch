@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import '../styles/VideoPlayer.css'
 
+const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
+
 function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const [selectedSource, setSelectedSource] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -9,9 +11,16 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   const [pipPosition, setPipPosition] = useState({ x: window.innerWidth - 420, y: window.innerHeight - 280 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [connectionSpeed, setConnectionSpeed] = useState('high')
+  const [autoQuality, setAutoQuality] = useState(true)
+  const [movieDetails, setMovieDetails] = useState(null)
+  const [credits, setCredits] = useState(null)
+  const [similarContent, setSimilarContent] = useState([])
+  const [loadingSimilar, setLoadingSimilar] = useState(true)
   const startTimeRef = useRef(Date.now())
   const progressIntervalRef = useRef(null)
   const pipRef = useRef(null)
+  const speedTestRef = useRef(null)
   
   const sources = [
     {
@@ -87,13 +96,131 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   ]
 
   useEffect(() => {
+    fetchMovieDetails()
+    fetchCredits()
+    fetchSimilarContent()
+  }, [movie.id, movie.type])
+
+  const fetchMovieDetails = async () => {
+    try {
+      const endpoint = movie.type === 'tv' ? 'tv' : 'movie'
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`
+      )
+      const data = await response.json()
+      setMovieDetails(data)
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }
+
+  const fetchCredits = async () => {
+    try {
+      const endpoint = movie.type === 'tv' ? 'tv' : 'movie'
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movie.id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
+      )
+      const data = await response.json()
+      setCredits(data)
+    } catch (error) {
+      console.error('Error fetching credits:', error)
+    }
+  }
+
+  const fetchSimilarContent = async () => {
+    setLoadingSimilar(true)
+    try {
+      const endpoint = movie.type === 'tv' ? 'tv' : 'movie'
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movie.id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+      )
+      const data = await response.json()
+      
+      const formatted = data.results?.slice(0, 6).map(item => ({
+        id: item.id,
+        title: item.title || item.name,
+        year: (item.release_date || item.first_air_date)?.split('-')[0] || 'N/A',
+        rating: item.vote_average?.toFixed(1) || 'N/A',
+        poster_url: item.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+          : 'https://via.placeholder.com/500x750',
+        description: item.overview || 'No description available.',
+        backdrop_url: item.backdrop_path
+          ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+          : null,
+        type: movie.type
+      })) || []
+      
+      setSimilarContent(formatted)
+    } catch (error) {
+      console.error('Error fetching similar content:', error)
+    }
+    setLoadingSimilar(false)
+  }
+
+  // Monitor connection speed
+  useEffect(() => {
+    const checkConnectionSpeed = async () => {
+      if (!navigator.connection && !navigator.mozConnection && !navigator.webkitConnection) {
+        const startTime = Date.now()
+        try {
+          await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' })
+          const endTime = Date.now()
+          const latency = endTime - startTime
+          
+          if (latency < 200) {
+            setConnectionSpeed('high')
+          } else if (latency < 500) {
+            setConnectionSpeed('medium')
+          } else {
+            setConnectionSpeed('low')
+          }
+        } catch (error) {
+          setConnectionSpeed('low')
+        }
+        return
+      }
+
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      
+      const updateSpeed = () => {
+        const effectiveType = connection.effectiveType
+        
+        if (effectiveType === '4g') {
+          setConnectionSpeed('high')
+        } else if (effectiveType === '3g') {
+          setConnectionSpeed('medium')
+        } else {
+          setConnectionSpeed('low')
+        }
+      }
+
+      updateSpeed()
+      connection.addEventListener('change', updateSpeed)
+      
+      return () => {
+        connection.removeEventListener('change', updateSpeed)
+      }
+    }
+
+    checkConnectionSpeed()
+    speedTestRef.current = setInterval(checkConnectionSpeed, 30000)
+
+    return () => {
+      if (speedTestRef.current) {
+        clearInterval(speedTestRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     setLoading(true)
     setError(false)
     const timer = setTimeout(() => setLoading(false), 3000)
     return () => clearTimeout(timer)
   }, [selectedSource])
 
-  // Keyboard shortcuts: ESC to close, number keys to switch sources, P for PiP
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -104,13 +231,16 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
         }
       }
       
-      // P key for Picture-in-Picture
       if (e.key === 'p' || e.key === 'P') {
         e.preventDefault()
         togglePiP()
       }
+
+      if (e.key === 'q' || e.key === 'Q') {
+        e.preventDefault()
+        setAutoQuality(!autoQuality)
+      }
       
-      // Number keys 1-9 and 0 to switch sources
       const num = parseInt(e.key)
       if (!isNaN(num)) {
         const sourceIndex = num === 0 ? 9 : num - 1
@@ -122,10 +252,9 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, sources.length, isPiP])
+  }, [onClose, sources.length, isPiP, autoQuality])
 
   useEffect(() => {
-    // Track watch progress every 30 seconds
     progressIntervalRef.current = setInterval(() => {
       const watchedTime = Math.floor((Date.now() - startTimeRef.current) / 1000)
       if (onUpdateProgress && watchedTime > 10) {
@@ -193,6 +322,49 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
     })
   }
 
+  const handleSimilarClick = (similarMovie) => {
+    onClose()
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('openMovie', { detail: similarMovie }))
+    }, 100)
+  }
+
+  const getQualityIcon = () => {
+    switch(connectionSpeed) {
+      case 'high':
+        return '🟢'
+      case 'medium':
+        return '🟡'
+      case 'low':
+        return '🔴'
+      default:
+        return '⚪'
+    }
+  }
+
+  const getQualityText = () => {
+    switch(connectionSpeed) {
+      case 'high':
+        return 'HD Quality'
+      case 'medium':
+        return 'SD Quality'
+      case 'low':
+        return 'Low Quality'
+      default:
+        return 'Auto Quality'
+    }
+  }
+
+  const formatRuntime = (minutes) => {
+    if (!minutes) return 'N/A'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+  }
+
+  const director = credits?.crew?.find(person => person.job === 'Director')
+  const cast = credits?.cast?.slice(0, 6)
+
   if (isPiP) {
     return (
       <div 
@@ -248,39 +420,47 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
   }
 
   return (
-    <div className="video-player-overlay" onClick={onClose}>
-      <div className="video-player-container" onClick={(e) => e.stopPropagation()}>
-        <div className="video-player-header">
-          <div className="video-player-title">
-            <h2>{movie.title}</h2>
-            <span className="video-player-meta">
-              {movie.year} • {movie.type === 'tv' ? 'TV Show (S1 E1)' : 'Movie'}
-            </span>
+    <div className="video-player-overlay-new">
+      <div className="video-player-scrollable">
+        <button className="video-player-close-floating" onClick={onClose}>✕</button>
+        
+        {/* Fixed Video Section */}
+        <div className="video-player-fixed-section">
+          <div className="video-player-header-new">
+            <div className="video-player-title">
+              <h2>{movie.title}</h2>
+              <span className="video-player-meta">
+                {movie.year} • {movie.type === 'tv' ? 'TV Show (S1 E1)' : 'Movie'}
+              </span>
+            </div>
+            <div className="video-player-controls">
+              <div className="quality-indicator" title={`Connection: ${connectionSpeed}`}>
+                <span className="quality-icon">{getQualityIcon()}</span>
+                <span className="quality-text">{getQualityText()}</span>
+              </div>
+              <button 
+                className="video-player-pip" 
+                onClick={togglePiP}
+                title="Picture-in-Picture (P)"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <rect x="8" y="10" width="12" height="8" rx="1"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="video-player-controls">
-            <button 
-              className="video-player-pip" 
-              onClick={togglePiP}
-              title="Picture-in-Picture (P)"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="3" width="20" height="14" rx="2"/>
-                <rect x="8" y="10" width="12" height="8" rx="1"/>
-              </svg>
-            </button>
-            <button className="video-player-close" onClick={onClose}>✕</button>
-          </div>
-        </div>
 
-        <div className="video-player-content">
-          <div className="video-player-main">
+          <div className="video-player-main-new">
             {loading && (
               <div className="video-player-loading">
                 <div className="loading-spinner"></div>
                 <p>Loading {sources[selectedSource].name}...</p>
-                <span className="loading-source">Finding best quality stream...</span>
+                <span className="loading-source">
+                  {autoQuality ? `Optimizing for ${connectionSpeed} speed...` : 'Finding best quality stream...'}
+                </span>
                 <div className="loading-tip">
-                  💡 Tip: Press P for Picture-in-Picture mode
+                  💡 Scroll down for more info • Press P for Picture-in-Picture
                 </div>
               </div>
             )}
@@ -317,61 +497,148 @@ function VideoPlayer({ movie, onClose, onUpdateProgress }) {
               }}
             />
           </div>
+        </div>
 
-          <div className="video-sources-sidebar">
-            <div className="sources-header">
-              <h3>Video Sources</h3>
-              <span className="sources-count">{sources.length} available</span>
-            </div>
-            
-            <div className="sources-tip">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-              <p>Press 1-9 or 0 to switch sources. Press P for Picture-in-Picture mode.</p>
-            </div>
-            
-            <div className="sources-list">
-              {sources.map((source, index) => (
-                <button
-                  key={index}
-                  className={`source-btn ${selectedSource === index ? 'active' : ''}`}
-                  onClick={() => handleSourceChange(index)}
-                >
-                  <span className="source-number">{index + 1}</span>
-                  <div className="source-content">
-                    <span className="source-name">{source.name}</span>
-                    {selectedSource === index && (
-                      <span className="source-status">
-                        {loading ? '⏳ Loading...' : error ? '❌ Failed' : '✓ Active'}
-                      </span>
-                    )}
+        {/* Scrollable Content Below */}
+        <div className="video-player-info-section">
+          <div className="video-info-container">
+            {/* Movie Description */}
+            <div className="video-info-block">
+              <h3 className="video-info-title">About {movie.title}</h3>
+              <p className="video-info-description">
+                {movie.description || 'No description available for this title.'}
+              </p>
+              <div className="video-info-meta">
+                {movie.rating && (
+                  <div className="info-badge">
+                    <span className="badge-label">Rating:</span>
+                    <span className="badge-value">⭐ {movie.rating}/10</span>
                   </div>
-                  {selectedSource === index && !loading && !error && (
-                    <div className="source-pulse"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-            
-            <div className="sources-info">
-              <h4>⌨️ Keyboard Shortcuts</h4>
-              <ol>
-                <li><strong>1-9, 0</strong> → Switch to source 1-10</li>
-                <li><strong>P</strong> → Picture-in-Picture mode</li>
-                <li><strong>ESC</strong> → Close player</li>
-                <li>Wait 3-10 seconds for player to load</li>
-              </ol>
-              
-              <div className="info-note">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 16v-4"/>
-                  <path d="M12 8h.01"/>
-                </svg>
-                <p>We don't host content. Sources search the web for streams.</p>
+                )}
+                {movieDetails?.runtime && (
+                  <div className="info-badge">
+                    <span className="badge-label">Duration:</span>
+                    <span className="badge-value">{formatRuntime(movieDetails.runtime)}</span>
+                  </div>
+                )}
+                {movie.year && (
+                  <div className="info-badge">
+                    <span className="badge-label">Year:</span>
+                    <span className="badge-value">{movie.year}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Cast */}
+            {cast && cast.length > 0 && (
+              <div className="video-info-block">
+                <h3 className="video-info-title">Cast</h3>
+                <div className="cast-scroll">
+                  {cast.map((person) => (
+                    <div key={person.id} className="cast-item">
+                      <div className="cast-photo-small">
+                        {person.profile_path ? (
+                          <img 
+                            src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} 
+                            alt={person.name}
+                          />
+                        ) : (
+                          <div className="cast-placeholder-small">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="cast-info-small">
+                        <p className="cast-name-small">{person.name}</p>
+                        <p className="cast-character-small">{person.character}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Director */}
+            {director && (
+              <div className="video-info-block">
+                <h3 className="video-info-title">Director</h3>
+                <p className="director-name">{director.name}</p>
+              </div>
+            )}
+
+            {/* Video Sources */}
+            <div className="video-info-block">
+              <h3 className="video-info-title">Video Sources ({sources.length} available)</h3>
+              
+              {/* Connection Status */}
+              <div className="connection-status-inline">
+                <div className="connection-inline-item">
+                  <span className="connection-icon-inline">{getQualityIcon()}</span>
+                  <div className="connection-text">
+                    <span className="connection-speed-inline">
+                      {connectionSpeed === 'high' ? 'Fast' : connectionSpeed === 'medium' ? 'Moderate' : 'Slow'} Connection
+                    </span>
+                    <span className="connection-quality-inline">{getQualityText()}</span>
+                  </div>
+                </div>
+                <button 
+                  className={`auto-quality-toggle ${autoQuality ? 'active' : ''}`}
+                  onClick={() => setAutoQuality(!autoQuality)}
+                  title="Toggle auto quality (Q)"
+                >
+                  {autoQuality ? 'Auto ✓' : 'Manual'}
+                </button>
+              </div>
+
+              <div className="sources-grid">
+                {sources.map((source, index) => (
+                  <button
+                    key={index}
+                    className={`source-card ${selectedSource === index ? 'active' : ''}`}
+                    onClick={() => handleSourceChange(index)}
+                  >
+                    <span className="source-card-number">{index + 1}</span>
+                    <span className="source-card-name">{source.name}</span>
+                    {selectedSource === index && (
+                      <span className="source-card-status">
+                        {loading ? '⏳' : error ? '❌' : '✓'}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Similar Content */}
+            {similarContent.length > 0 && (
+              <div className="video-info-block">
+                <h3 className="video-info-title">More Like This</h3>
+                <div className="similar-scroll">
+                  {similarContent.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="similar-card-inline"
+                      onClick={() => handleSimilarClick(item)}
+                    >
+                      <div className="similar-poster-inline">
+                        <img src={item.poster_url} alt={item.title} loading="lazy" />
+                        <div className="similar-overlay-inline">
+                          <span className="similar-play-inline">▶</span>
+                        </div>
+                        <div className="similar-rating-inline">⭐ {item.rating}</div>
+                      </div>
+                      <div className="similar-info-inline">
+                        <h4>{item.title}</h4>
+                        <span className="similar-year-inline">{item.year}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
