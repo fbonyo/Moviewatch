@@ -6,7 +6,6 @@ import MovieGrid from './components/MovieGrid'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
-import ContinueWatching from './components/ContinueWatching'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -20,7 +19,6 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState([])
-  const [continueWatching, setContinueWatching] = useState([])
   const [theme, setTheme] = useState('dark')
   const [activeSection, setActiveSection] = useState('home')
   const [currentPage, setCurrentPage] = useState(1)
@@ -29,7 +27,6 @@ function App() {
 
   useEffect(() => {
     loadWatchlist()
-    loadContinueWatching()
     loadTheme()
     fetchLatestMovies(1, null)
     fetchLatestTVShows(1, null)
@@ -66,72 +63,6 @@ function App() {
     }
   }
 
-  const loadContinueWatching = async () => {
-    try {
-      const result = await window.storage.get('continueWatching')
-      if (result) {
-        setContinueWatching(JSON.parse(result.value))
-      }
-    } catch (error) {
-      console.log('No continue watching data found')
-    }
-  }
-
-  const updateWatchProgress = async (movie, watchedTime) => {
-    try {
-      const existingIndex = continueWatching.findIndex(
-        item => item.id === movie.id && item.type === movie.type
-      )
-
-      const updatedItem = {
-        ...movie,
-        watchedTime,
-        totalTime: movie.type === 'tv' ? 2400 : 7200, // 40 min for TV, 2 hours for movies
-        lastWatched: new Date().toISOString()
-      }
-
-      let newContinueWatching
-      if (existingIndex >= 0) {
-        newContinueWatching = [...continueWatching]
-        newContinueWatching[existingIndex] = updatedItem
-      } else {
-        newContinueWatching = [updatedItem, ...continueWatching]
-      }
-
-      // Keep only last 20 items
-      newContinueWatching = newContinueWatching.slice(0, 20)
-
-      setContinueWatching(newContinueWatching)
-      await window.storage.set('continueWatching', JSON.stringify(newContinueWatching))
-    } catch (error) {
-      console.error('Error updating watch progress:', error)
-    }
-  }
-
-  const removeFromContinueWatching = async (movie) => {
-    try {
-      const newContinueWatching = continueWatching.filter(
-        item => !(item.id === movie.id && item.type === movie.type)
-      )
-      setContinueWatching(newContinueWatching)
-      await window.storage.set('continueWatching', JSON.stringify(newContinueWatching))
-    } catch (error) {
-      console.error('Error removing from continue watching:', error)
-    }
-  }
-
-  const removeDuplicates = (movies) => {
-    const seen = new Set()
-    return movies.filter(movie => {
-      const key = `${movie.id}-${movie.type}`
-      if (seen.has(key)) {
-        return false
-      }
-      seen.add(key)
-      return true
-    })
-  }
-
   const fetchLatestMovies = async (page, genreId) => {
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -144,22 +75,30 @@ function App() {
       const response = await fetch(endpoint)
       const data = await response.json()
       
-      const formattedMovies = data.results.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date?.split('-')[0] || '2024',
-        rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-          : 'https://via.placeholder.com/500x750',
-        description: movie.overview || 'No description available.',
-        backdrop_url: movie.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-          : null,
-        type: 'movie'
-      }))
+      const formattedMovies = data.results.map(movie => {
+        const releaseDate = new Date(movie.release_date)
+        const now = new Date()
+        const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
+        const quality = daysSinceRelease < 60 ? 'CAM' : 'HD'
+        
+        return {
+          id: movie.id,
+          title: movie.title,
+          year: movie.release_date?.split('-')[0] || '2024',
+          rating: movie.vote_average?.toFixed(1) || 'N/A',
+          poster_url: movie.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : 'https://via.placeholder.com/500x750',
+          description: movie.overview || 'No description available.',
+          backdrop_url: movie.backdrop_path
+            ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+            : null,
+          type: 'movie',
+          quality: quality
+        }
+      })
       
-      setMovies(removeDuplicates(formattedMovies))
+      setMovies(formattedMovies)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
     } catch (error) {
@@ -180,22 +119,30 @@ function App() {
       const response = await fetch(endpoint)
       const data = await response.json()
       
-      const formattedShows = data.results.map(show => ({
-        id: show.id,
-        title: show.name,
-        year: show.first_air_date?.split('-')[0] || '2024',
-        rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-          : 'https://via.placeholder.com/500x750',
-        description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-          : null,
-        type: 'tv'
-      }))
+      const formattedShows = data.results.map(show => {
+        const firstAirDate = new Date(show.first_air_date)
+        const now = new Date()
+        const daysSinceRelease = (now - firstAirDate) / (1000 * 60 * 60 * 24)
+        const quality = daysSinceRelease < 30 ? 'CAM' : 'HD'
+        
+        return {
+          id: show.id,
+          title: show.name,
+          year: show.first_air_date?.split('-')[0] || '2024',
+          rating: show.vote_average?.toFixed(1) || 'N/A',
+          poster_url: show.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+            : 'https://via.placeholder.com/500x750',
+          description: show.overview || 'No description available.',
+          backdrop_url: show.backdrop_path
+            ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
+            : null,
+          type: 'tv',
+          quality: quality
+        }
+      })
       
-      setTvShows(removeDuplicates(formattedShows))
+      setTvShows(formattedShows)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
     } catch (error) {
@@ -225,37 +172,53 @@ function App() {
       const movieData = await movieRes.json()
       const tvData = await tvRes.json()
       
-      const formattedMovies = movieData.results?.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date?.split('-')[0] || 'N/A',
-        rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-          : 'https://via.placeholder.com/500x750',
-        description: movie.overview || 'No description available.',
-        backdrop_url: movie.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-          : null,
-        type: 'movie'
-      })) || []
+      const formattedMovies = movieData.results?.map(movie => {
+        const releaseDate = new Date(movie.release_date)
+        const now = new Date()
+        const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
+        const quality = daysSinceRelease < 60 ? 'CAM' : 'HD'
+        
+        return {
+          id: movie.id,
+          title: movie.title,
+          year: movie.release_date?.split('-')[0] || 'N/A',
+          rating: movie.vote_average?.toFixed(1) || 'N/A',
+          poster_url: movie.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : 'https://via.placeholder.com/500x750',
+          description: movie.overview || 'No description available.',
+          backdrop_url: movie.backdrop_path
+            ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+            : null,
+          type: 'movie',
+          quality: quality
+        }
+      }) || []
 
-      const formattedTVShows = tvData.results?.map(show => ({
-        id: show.id,
-        title: show.name,
-        year: show.first_air_date?.split('-')[0] || 'N/A',
-        rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-          : 'https://via.placeholder.com/500x750',
-        description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-          : null,
-        type: 'tv'
-      })) || []
+      const formattedTVShows = tvData.results?.map(show => {
+        const firstAirDate = new Date(show.first_air_date)
+        const now = new Date()
+        const daysSinceRelease = (now - firstAirDate) / (1000 * 60 * 60 * 24)
+        const quality = daysSinceRelease < 30 ? 'CAM' : 'HD'
+        
+        return {
+          id: show.id,
+          title: show.name,
+          year: show.first_air_date?.split('-')[0] || 'N/A',
+          rating: show.vote_average?.toFixed(1) || 'N/A',
+          poster_url: show.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+            : 'https://via.placeholder.com/500x750',
+          description: show.overview || 'No description available.',
+          backdrop_url: show.backdrop_path
+            ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
+            : null,
+          type: 'tv',
+          quality: quality
+        }
+      }) || []
       
-      setMovies(removeDuplicates([...formattedMovies, ...formattedTVShows]))
+      setMovies([...formattedMovies, ...formattedTVShows])
       setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))
       setCurrentPage(page)
       setActiveSection('search')
@@ -374,16 +337,7 @@ function App() {
         setActiveSection={handleSectionChange}
       />
       {activeSection === 'home' && (
-        <>
-          <Hero movies={movies} onSelectMovie={setSelectedMovie} />
-          {continueWatching.length > 0 && (
-            <ContinueWatching 
-              continueWatching={continueWatching}
-              onSelectMovie={handlePlayMovie}
-              onRemove={removeFromContinueWatching}
-            />
-          )}
-        </>
+        <Hero movies={movies} onSelectMovie={setSelectedMovie} />
       )}
       {showGenreFilter && (
         <GenreFilter 
@@ -420,7 +374,6 @@ function App() {
         <VideoPlayer 
           movie={playingMovie}
           onClose={() => setPlayingMovie(null)}
-          onUpdateProgress={updateWatchProgress}
         />
       )}
     </div>

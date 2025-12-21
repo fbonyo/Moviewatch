@@ -315,3 +315,50 @@
 .movie-card-image img {
   transition: opacity 0.5s ease-in-out;
 }
+
+.quality-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+.movie-card:hover .quality-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.quality-badge.hd {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(21, 128, 61, 0.9) 100%);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #fff;
+}
+
+.quality-badge.cam {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.9) 0%, rgba(161, 98, 7, 0.9) 100%);
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fff;
+}
+
+.quality-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  border-radius: 6px;
+  pointer-events: none;
+}
