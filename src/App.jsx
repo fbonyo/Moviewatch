@@ -79,7 +79,7 @@ function App() {
         const releaseDate = new Date(movie.release_date)
         const now = new Date()
         const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 60 ? 'CAM' : 'HD'
+        const quality = daysSinceRelease < 15 ? 'CAM' : 'HD'
         
         return {
           id: movie.id,
@@ -119,28 +119,20 @@ function App() {
       const response = await fetch(endpoint)
       const data = await response.json()
       
-      const formattedShows = data.results.map(show => {
-        const firstAirDate = new Date(show.first_air_date)
-        const now = new Date()
-        const daysSinceRelease = (now - firstAirDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 30 ? 'CAM' : 'HD'
-        
-        return {
-          id: show.id,
-          title: show.name,
-          year: show.first_air_date?.split('-')[0] || '2024',
-          rating: show.vote_average?.toFixed(1) || 'N/A',
-          poster_url: show.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-            : 'https://via.placeholder.com/500x750',
-          description: show.overview || 'No description available.',
-          backdrop_url: show.backdrop_path
-            ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-            : null,
-          type: 'tv',
-          quality: quality
-        }
-      })
+      const formattedShows = data.results.map(show => ({
+        id: show.id,
+        title: show.name,
+        year: show.first_air_date?.split('-')[0] || '2024',
+        rating: show.vote_average?.toFixed(1) || 'N/A',
+        poster_url: show.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+          : 'https://via.placeholder.com/500x750',
+        description: show.overview || 'No description available.',
+        backdrop_url: show.backdrop_path
+          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
+          : null,
+        type: 'tv'
+      }))
       
       setTvShows(formattedShows)
       setTotalPages(Math.min(data.total_pages, 500))
@@ -176,7 +168,7 @@ function App() {
         const releaseDate = new Date(movie.release_date)
         const now = new Date()
         const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 60 ? 'CAM' : 'HD'
+        const quality = daysSinceRelease < 15 ? 'CAM' : 'HD'
         
         return {
           id: movie.id,
@@ -195,28 +187,20 @@ function App() {
         }
       }) || []
 
-      const formattedTVShows = tvData.results?.map(show => {
-        const firstAirDate = new Date(show.first_air_date)
-        const now = new Date()
-        const daysSinceRelease = (now - firstAirDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 30 ? 'CAM' : 'HD'
-        
-        return {
-          id: show.id,
-          title: show.name,
-          year: show.first_air_date?.split('-')[0] || 'N/A',
-          rating: show.vote_average?.toFixed(1) || 'N/A',
-          poster_url: show.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-            : 'https://via.placeholder.com/500x750',
-          description: show.overview || 'No description available.',
-          backdrop_url: show.backdrop_path
-            ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-            : null,
-          type: 'tv',
-          quality: quality
-        }
-      }) || []
+      const formattedTVShows = tvData.results?.map(show => ({
+        id: show.id,
+        title: show.name,
+        year: show.first_air_date?.split('-')[0] || 'N/A',
+        rating: show.vote_average?.toFixed(1) || 'N/A',
+        poster_url: show.poster_path 
+          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
+          : 'https://via.placeholder.com/500x750',
+        description: show.overview || 'No description available.',
+        backdrop_url: show.backdrop_path
+          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
+          : null,
+        type: 'tv'
+      })) || []
       
       setMovies([...formattedMovies, ...formattedTVShows])
       setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))

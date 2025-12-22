@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import NotificationPanel from './NotificationPanel'
 import '../styles/Header.css'
 
-function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection }) {
+function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection, currentUser, onAuthClick, onLogout }) {
   const [scrolled, setScrolled] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(0)
-  const [hasNewNotifications, setHasNewNotifications] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,40 +26,6 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
     setSearchQuery('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  const handleMovieSelect = (movie) => {
-    window.dispatchEvent(new CustomEvent('openMovie', { detail: movie }))
-  }
-
-  const handleNotificationUpdate = (count) => {
-    setNotificationCount(count)
-    if (count > 0) {
-      setHasNewNotifications(true)
-      // Show browser notification if supported
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('MovieWatch', {
-          body: `${count} new content available!`,
-          icon: '/vite.svg'
-        })
-      }
-    } else {
-      setHasNewNotifications(false)
-    }
-  }
-
-  const handleNotificationClick = () => {
-    setShowNotifications(!showNotifications)
-    if (!showNotifications) {
-      setHasNewNotifications(false)
-    }
-  }
-
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  }, [])
 
   return (
     <header className={`header ${scrolled ? 'scrolled' : ''}`}>
@@ -141,29 +103,40 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
             )}
           </button>
 
-          <button 
-            className={`notification-btn ${hasNewNotifications ? 'has-new' : ''}`}
-            onClick={handleNotificationClick}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            {notificationCount > 0 && (
-              <span className="notification-count">{notificationCount}</span>
-            )}
-            {hasNewNotifications && <span className="notification-dot"></span>}
-          </button>
+          {currentUser ? (
+            <div className="user-menu">
+              <button className="user-btn" title={currentUser.username}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </button>
+              <div className="user-dropdown">
+                <div className="user-info">
+                  <p className="user-name">{currentUser.username}</p>
+                  <p className="user-email">{currentUser.email}</p>
+                </div>
+                <button className="logout-btn" onClick={onLogout}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="sign-in-btn" onClick={onAuthClick}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Sign In
+            </button>
+          )}
         </div>
       </div>
-      
-      {showNotifications && (
-        <NotificationPanel 
-          onClose={() => setShowNotifications(false)}
-          onSelectMovie={handleMovieSelect}
-          onNotificationUpdate={handleNotificationUpdate}
-        />
-      )}
     </header>
   )
 }
