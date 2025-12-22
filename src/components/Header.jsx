@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import '../styles/Header.css'
 
-function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection, currentUser, onAuthClick, onLogout }) {
+function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, activeSection, setActiveSection }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -102,39 +102,6 @@ function Header({ searchQuery, setSearchQuery, onSearch, theme, setTheme, active
               </svg>
             )}
           </button>
-
-          {currentUser ? (
-            <div className="user-menu">
-              <button className="user-btn" title={currentUser.username}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </button>
-              <div className="user-dropdown">
-                <div className="user-info">
-                  <p className="user-name">{currentUser.username}</p>
-                  <p className="user-email">{currentUser.email}</p>
-                </div>
-                <button className="logout-btn" onClick={onLogout}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button className="sign-in-btn" onClick={onAuthClick}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              Sign In
-            </button>
-          )}
         </div>
       </div>
     </header>

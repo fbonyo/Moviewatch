@@ -6,6 +6,7 @@ import MovieGrid from './components/MovieGrid'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
+import ContinueWatching from './components/ContinueWatching'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -19,6 +20,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState([])
+  const [continueWatching, setContinueWatching] = useState([])
   const [theme, setTheme] = useState('dark')
   const [activeSection, setActiveSection] = useState('home')
   const [currentPage, setCurrentPage] = useState(1)
@@ -27,14 +29,11 @@ function App() {
 
   useEffect(() => {
     loadWatchlist()
+    loadContinueWatching()
     loadTheme()
     fetchLatestMovies(1, null)
     fetchLatestTVShows(1, null)
-
-    const handleOpenMovie = (event) => {
-      setSelectedMovie(event.detail)
-    }
-
+    const handleOpenMovie = (e) => setSelectedMovie(e.detail)
     window.addEventListener('openMovie', handleOpenMovie)
     return () => window.removeEventListener('openMovie', handleOpenMovie)
   }, [])
@@ -47,9 +46,7 @@ function App() {
   const loadTheme = async () => {
     try {
       const result = await window.storage.get('theme')
-      if (result) {
-        setTheme(result.value)
-      }
+      if (result) setTheme(result.value)
     } catch (error) {
       console.log('No theme found, using default')
     }
@@ -63,41 +60,64 @@ function App() {
     }
   }
 
+  const loadContinueWatching = async () => {
+    try {
+      const result = await window.storage.get('continueWatching')
+      if (result) setContinueWatching(JSON.parse(result.value))
+    } catch (error) {
+      console.log('No continue watching data')
+    }
+  }
+
+  const updateContinueWatching = async (movie, watchedTime) => {
+    const existing = continueWatching.find(m => m.id === movie.id && m.type === movie.type)
+    let updated
+    if (existing) {
+      updated = continueWatching.map(m => 
+        m.id === movie.id && m.type === movie.type 
+          ? { ...m, watchedTime, lastWatched: Date.now() }
+          : m
+      )
+    } else {
+      updated = [{ ...movie, watchedTime, lastWatched: Date.now(), totalTime: 5400 }, ...continueWatching].slice(0, 20)
+    }
+    setContinueWatching(updated)
+    try {
+      await window.storage.set('continueWatching', JSON.stringify(updated))
+    } catch (error) {
+      console.error('Error saving continue watching:', error)
+    }
+  }
+
+  const removeContinueWatching = async (movie) => {
+    const updated = continueWatching.filter(m => !(m.id === movie.id && m.type === movie.type))
+    setContinueWatching(updated)
+    try {
+      await window.storage.set('continueWatching', JSON.stringify(updated))
+    } catch (error) {
+      console.error('Error removing from continue watching:', error)
+    }
+  }
+
   const fetchLatestMovies = async (page, genreId) => {
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
     try {
       const endpoint = genreId 
         ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
         : `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      
       const response = await fetch(endpoint)
       const data = await response.json()
-      
-      const formattedMovies = data.results.map(movie => {
-        const releaseDate = new Date(movie.release_date)
-        const now = new Date()
-        const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 15 ? 'CAM' : 'HD'
-        
-        return {
-          id: movie.id,
-          title: movie.title,
-          year: movie.release_date?.split('-')[0] || '2024',
-          rating: movie.vote_average?.toFixed(1) || 'N/A',
-          poster_url: movie.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-            : 'https://via.placeholder.com/500x750',
-          description: movie.overview || 'No description available.',
-          backdrop_url: movie.backdrop_path
-            ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-            : null,
-          type: 'movie',
-          quality: quality
-        }
-      })
-      
+      const formattedMovies = data.results.map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        year: movie.release_date?.split('-')[0] || '2024',
+        rating: movie.vote_average?.toFixed(1) || 'N/A',
+        poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750',
+        description: movie.overview || 'No description available.',
+        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : null,
+        type: 'movie'
+      }))
       setMovies(formattedMovies)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
@@ -110,30 +130,22 @@ function App() {
   const fetchLatestTVShows = async (page, genreId) => {
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
     try {
       const endpoint = genreId
         ? `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
         : `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      
       const response = await fetch(endpoint)
       const data = await response.json()
-      
       const formattedShows = data.results.map(show => ({
         id: show.id,
         title: show.name,
         year: show.first_air_date?.split('-')[0] || '2024',
         rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-          : 'https://via.placeholder.com/500x750',
+        poster_url: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : 'https://via.placeholder.com/500x750',
         description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-          : null,
+        backdrop_url: show.backdrop_path ? `https://image.tmdb.org/t/p/original${show.backdrop_path}` : null,
         type: 'tv'
       }))
-      
       setTvShows(formattedShows)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
@@ -151,57 +163,35 @@ function App() {
       setSelectedGenre(null)
       return
     }
-    
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
     try {
       const [movieRes, tvRes] = await Promise.all([
         fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`),
         fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`)
       ])
-      
       const movieData = await movieRes.json()
       const tvData = await tvRes.json()
-      
-      const formattedMovies = movieData.results?.map(movie => {
-        const releaseDate = new Date(movie.release_date)
-        const now = new Date()
-        const daysSinceRelease = (now - releaseDate) / (1000 * 60 * 60 * 24)
-        const quality = daysSinceRelease < 15 ? 'CAM' : 'HD'
-        
-        return {
-          id: movie.id,
-          title: movie.title,
-          year: movie.release_date?.split('-')[0] || 'N/A',
-          rating: movie.vote_average?.toFixed(1) || 'N/A',
-          poster_url: movie.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-            : 'https://via.placeholder.com/500x750',
-          description: movie.overview || 'No description available.',
-          backdrop_url: movie.backdrop_path
-            ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-            : null,
-          type: 'movie',
-          quality: quality
-        }
-      }) || []
-
+      const formattedMovies = movieData.results?.map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        year: movie.release_date?.split('-')[0] || 'N/A',
+        rating: movie.vote_average?.toFixed(1) || 'N/A',
+        poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750',
+        description: movie.overview || 'No description available.',
+        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : null,
+        type: 'movie'
+      })) || []
       const formattedTVShows = tvData.results?.map(show => ({
         id: show.id,
         title: show.name,
         year: show.first_air_date?.split('-')[0] || 'N/A',
         rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
-          ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-          : 'https://via.placeholder.com/500x750',
+        poster_url: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : 'https://via.placeholder.com/500x750',
         description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path
-          ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
-          : null,
+        backdrop_url: show.backdrop_path ? `https://image.tmdb.org/t/p/original${show.backdrop_path}` : null,
         type: 'tv'
       })) || []
-      
       setMovies([...formattedMovies, ...formattedTVShows])
       setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))
       setCurrentPage(page)
@@ -214,36 +204,24 @@ function App() {
   }
 
   const handlePageChange = (page) => {
-    if (activeSection === 'movies') {
-      fetchLatestMovies(page, selectedGenre)
-    } else if (activeSection === 'tvshows') {
-      fetchLatestTVShows(page, selectedGenre)
-    } else if (activeSection === 'search') {
-      searchMovies(searchQuery, page)
-    } else if (activeSection === 'home') {
-      fetchLatestMovies(page, selectedGenre)
-    }
+    if (activeSection === 'movies') fetchLatestMovies(page, selectedGenre)
+    else if (activeSection === 'tvshows') fetchLatestTVShows(page, selectedGenre)
+    else if (activeSection === 'search') searchMovies(searchQuery, page)
+    else if (activeSection === 'home') fetchLatestMovies(page, selectedGenre)
   }
 
   const handleGenreChange = (genreId) => {
     setSelectedGenre(genreId)
     setCurrentPage(1)
-    
-    if (activeSection === 'movies') {
-      fetchLatestMovies(1, genreId)
-    } else if (activeSection === 'tvshows') {
-      fetchLatestTVShows(1, genreId)
-    } else {
-      fetchLatestMovies(1, genreId)
-    }
+    if (activeSection === 'movies') fetchLatestMovies(1, genreId)
+    else if (activeSection === 'tvshows') fetchLatestTVShows(1, genreId)
+    else fetchLatestMovies(1, genreId)
   }
 
   const loadWatchlist = async () => {
     try {
       const result = await window.storage.get('watchlist')
-      if (result) {
-        setWatchlist(JSON.parse(result.value))
-      }
+      if (result) setWatchlist(JSON.parse(result.value))
     } catch (error) {
       console.log('No watchlist found')
     }
@@ -251,16 +229,10 @@ function App() {
 
   const toggleWatchlist = async (movie) => {
     const isInWatchlist = watchlist.some(m => m.id === movie.id && m.type === movie.type)
-    let newWatchlist
-    
-    if (isInWatchlist) {
-      newWatchlist = watchlist.filter(m => !(m.id === movie.id && m.type === movie.type))
-    } else {
-      newWatchlist = [...watchlist, movie]
-    }
-    
+    const newWatchlist = isInWatchlist 
+      ? watchlist.filter(m => !(m.id === movie.id && m.type === movie.type))
+      : [...watchlist, movie]
     setWatchlist(newWatchlist)
-    
     try {
       await window.storage.set('watchlist', JSON.stringify(newWatchlist))
     } catch (error) {
@@ -272,7 +244,6 @@ function App() {
     setActiveSection(section)
     setCurrentPage(1)
     setSelectedGenre(null)
-    
     if (section === 'movies') {
       setLoading(true)
       fetchLatestMovies(1, null)
@@ -323,6 +294,13 @@ function App() {
       {activeSection === 'home' && (
         <Hero movies={movies} onSelectMovie={setSelectedMovie} />
       )}
+      {activeSection === 'home' && continueWatching.length > 0 && (
+        <ContinueWatching 
+          continueWatching={continueWatching}
+          onSelectMovie={handlePlayMovie}
+          onRemove={removeContinueWatching}
+        />
+      )}
       {showGenreFilter && (
         <GenreFilter 
           selectedGenre={selectedGenre}
@@ -358,6 +336,7 @@ function App() {
         <VideoPlayer 
           movie={playingMovie}
           onClose={() => setPlayingMovie(null)}
+          onUpdateProgress={updateContinueWatching}
         />
       )}
     </div>
