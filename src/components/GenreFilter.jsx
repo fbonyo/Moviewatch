@@ -47,21 +47,23 @@ function GenreFilter({ selectedGenre, onGenreChange, contentType = 'movie' }) {
   const genres = contentType === 'tv' ? tvGenres : movieGenres
 
   return (
-    <div className="genre-filter-container">
-      <div className="genre-filter-header">
-        <h3>Browse by Genre</h3>
-        <span className="genre-count">{genres.length} categories</span>
-      </div>
-      <div className="genre-filter-scroll">
-        <div className="genre-filter">
+    <div className="genre-filter-modern">
+      <div className="genre-filter-container-modern">
+        <div className="genre-header-modern">
+          <h2 className="genre-title-modern">Browse by Genre</h2>
+          <div className="genre-count-modern">{genres.length} categories</div>
+        </div>
+        
+        <div className="genre-grid-modern">
           {genres.map((genre) => (
             <button
               key={genre.id || 'all'}
-              className={`genre-btn ${selectedGenre === genre.id ? 'active' : ''}`}
+              className={`genre-card-modern ${selectedGenre === genre.id ? 'active' : ''}`}
               onClick={() => onGenreChange(genre.id)}
             >
-              <span className="genre-icon">{genre.icon}</span>
-              <span className="genre-name">{genre.name}</span>
+              <div className="genre-icon-modern">{genre.icon}</div>
+              <span className="genre-name-modern">{genre.name}</span>
+              <div className="genre-shine"></div>
             </button>
           ))}
         </div>
