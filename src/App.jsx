@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Hero from './components/Hero'
 import GenreFilter from './components/GenreFilter'
 import MovieGrid from './components/MovieGrid'
+import CategorySections from './components/CategorySections'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
@@ -290,8 +291,8 @@ function App() {
   }
 
   const displayContent = getDisplayContent()
-  const showPagination = activeSection !== 'mylist' && !loading && displayContent.data.length > 0
-  const showGenreFilter = (activeSection === 'home' || activeSection === 'movies' || activeSection === 'tvshows') && activeSection !== 'mylist'
+  const showPagination = activeSection !== 'mylist' && activeSection !== 'home' && !loading && displayContent.data.length > 0
+  const showGenreFilter = (activeSection === 'movies' || activeSection === 'tvshows') && activeSection !== 'mylist'
 
   return (
     <div className="app">
@@ -305,29 +306,40 @@ function App() {
         setActiveSection={handleSectionChange}
       />
       {activeSection === 'home' && (
-        <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+        <>
+          <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+          <CategorySections 
+            onSelectMovie={setSelectedMovie}
+            watchlist={watchlist}
+            onToggleWatchlist={toggleWatchlist}
+          />
+        </>
       )}
-      {showGenreFilter && (
-        <GenreFilter 
-          selectedGenre={selectedGenre}
-          onGenreChange={handleGenreChange}
-          contentType={displayContent.type}
-        />
-      )}
-      <MovieGrid 
-        movies={displayContent.data} 
-        loading={loading}
-        onSelectMovie={setSelectedMovie}
-        watchlist={watchlist}
-        onToggleWatchlist={toggleWatchlist}
-        title={displayContent.title}
-      />
-      {showPagination && (
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+      {activeSection !== 'home' && (
+        <>
+          {showGenreFilter && (
+            <GenreFilter 
+              selectedGenre={selectedGenre}
+              onGenreChange={handleGenreChange}
+              contentType={displayContent.type}
+            />
+          )}
+          <MovieGrid 
+            movies={displayContent.data} 
+            loading={loading}
+            onSelectMovie={setSelectedMovie}
+            watchlist={watchlist}
+            onToggleWatchlist={toggleWatchlist}
+            title={displayContent.title}
+          />
+          {showPagination && (
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </>
       )}
       {selectedMovie && (
         <MovieModal 
