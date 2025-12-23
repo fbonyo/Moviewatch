@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import Header from './components/Header'
-import Hero from './components/Hero'
-import GenreFilter from './components/GenreFilter'
-import MovieGrid from './components/MovieGrid'
+import MovieRow from './components/MovieRow'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
-import Pagination from './components/Pagination'
 import ContinueWatching from './components/ContinueWatching'
 import './styles/App.css'
 
@@ -13,29 +10,32 @@ const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 
 function App() {
-  const [movies, setMovies] = useState([])
-  const [tvShows, setTvShows] = useState([])
+  const [trendingMovies, setTrendingMovies] = useState([])
+  const [popularMovies, setPopularMovies] = useState([])
+  const [topRatedMovies, setTopRatedMovies] = useState([])
+  const [newReleases, setNewReleases] = useState([])
+  const [mustSeeHits, setMustSeeHits] = useState([])
+  const [actionMovies, setActionMovies] = useState([])
+  const [comedyMovies, setComedyMovies] = useState([])
+  const [horrorMovies, setHorrorMovies] = useState([])
+  const [trendingTV, setTrendingTV] = useState([])
+  const [popularTV, setPopularTV] = useState([])
+  const [newEpisodes, setNewEpisodes] = useState([])
+  const [topRatedTV, setTopRatedTV] = useState([])
+  const [kdramas, setKdramas] = useState([])
+  const [cdramas, setCdramas] = useState([])
+  const [anime, setAnime] = useState([])
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [playingMovie, setPlayingMovie] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState([])
   const [continueWatching, setContinueWatching] = useState([])
   const [theme, setTheme] = useState('dark')
-  const [activeSection, setActiveSection] = useState('home')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [selectedGenre, setSelectedGenre] = useState(null)
 
   useEffect(() => {
     loadWatchlist()
     loadContinueWatching()
     loadTheme()
-    fetchLatestMovies(1, null)
-    fetchLatestTVShows(1, null)
-    const handleOpenMovie = (e) => setSelectedMovie(e.detail)
-    window.addEventListener('openMovie', handleOpenMovie)
-    return () => window.removeEventListener('openMovie', handleOpenMovie)
+    fetchAllContent()
   }, [])
 
   useEffect(() => {
@@ -47,26 +47,20 @@ function App() {
     try {
       const result = await window.storage.get('theme')
       if (result) setTheme(result.value)
-    } catch (error) {
-      console.log('No theme found, using default')
-    }
+    } catch (error) {}
   }
 
   const saveTheme = async () => {
     try {
       await window.storage.set('theme', theme)
-    } catch (error) {
-      console.error('Error saving theme:', error)
-    }
+    } catch (error) {}
   }
 
   const loadContinueWatching = async () => {
     try {
       const result = await window.storage.get('continueWatching')
       if (result) setContinueWatching(JSON.parse(result.value))
-    } catch (error) {
-      console.log('No continue watching data')
-    }
+    } catch (error) {}
   }
 
   const updateContinueWatching = async (movie, watchedTime) => {
@@ -84,9 +78,7 @@ function App() {
     setContinueWatching(updated)
     try {
       await window.storage.set('continueWatching', JSON.stringify(updated))
-    } catch (error) {
-      console.error('Error saving continue watching:', error)
-    }
+    } catch (error) {}
   }
 
   const removeContinueWatching = async (movie) => {
@@ -94,137 +86,65 @@ function App() {
     setContinueWatching(updated)
     try {
       await window.storage.set('continueWatching', JSON.stringify(updated))
-    } catch (error) {
-      console.error('Error removing from continue watching:', error)
-    }
+    } catch (error) {}
   }
 
-  const fetchLatestMovies = async (page, genreId) => {
-    setLoading(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const fetchAllContent = async () => {
     try {
-      const endpoint = genreId 
-        ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
-        : `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      const response = await fetch(endpoint)
-      const data = await response.json()
-      const formattedMovies = data.results.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date?.split('-')[0] || '2024',
-        rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750',
-        description: movie.overview || 'No description available.',
-        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : null,
-        type: 'movie'
-      }))
-      setMovies(formattedMovies)
-      setTotalPages(Math.min(data.total_pages, 500))
-      setCurrentPage(page)
-    } catch (error) {
-      console.error('Error fetching movies:', error)
-    }
-    setLoading(false)
-  }
-
-  const fetchLatestTVShows = async (page, genreId) => {
-    setLoading(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    try {
-      const endpoint = genreId
-        ? `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
-        : `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      const response = await fetch(endpoint)
-      const data = await response.json()
-      const formattedShows = data.results.map(show => ({
-        id: show.id,
-        title: show.name,
-        year: show.first_air_date?.split('-')[0] || '2024',
-        rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : 'https://via.placeholder.com/500x750',
-        description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path ? `https://image.tmdb.org/t/p/original${show.backdrop_path}` : null,
-        type: 'tv'
-      }))
-      setTvShows(formattedShows)
-      setTotalPages(Math.min(data.total_pages, 500))
-      setCurrentPage(page)
-    } catch (error) {
-      console.error('Error fetching TV shows:', error)
-    }
-    setLoading(false)
-  }
-
-  const searchMovies = async (query, page = 1) => {
-    if (!query.trim()) {
-      fetchLatestMovies(1, null)
-      setActiveSection('home')
-      setCurrentPage(1)
-      setSelectedGenre(null)
-      return
-    }
-    setLoading(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    try {
-      const [movieRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`)
+      const [trending, popular, topRated, nowPlaying, highRated, action, comedy, horror, tv, popularTv, airingToday, topTv, korean, chinese, animeData] = await Promise.all([
+        fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&vote_average.gte=7.5&vote_count.gte=1000`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=28`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=35`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=27`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/trending/tv/week?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/tv/airing_today?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/tv/top_rated?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_original_language=ko&sort_by=popularity.desc`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_original_language=zh&sort_by=popularity.desc`).then(r => r.json()),
+        fetch(`${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_original_language=ja&with_genres=16`).then(r => r.json())
       ])
-      const movieData = await movieRes.json()
-      const tvData = await tvRes.json()
-      const formattedMovies = movieData.results?.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date?.split('-')[0] || 'N/A',
-        rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750',
-        description: movie.overview || 'No description available.',
-        backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : null,
-        type: 'movie'
-      })) || []
-      const formattedTVShows = tvData.results?.map(show => ({
-        id: show.id,
-        title: show.name,
-        year: show.first_air_date?.split('-')[0] || 'N/A',
-        rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : 'https://via.placeholder.com/500x750',
-        description: show.overview || 'No description available.',
-        backdrop_url: show.backdrop_path ? `https://image.tmdb.org/t/p/original${show.backdrop_path}` : null,
-        type: 'tv'
-      })) || []
-      setMovies([...formattedMovies, ...formattedTVShows])
-      setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))
-      setCurrentPage(page)
-      setActiveSection('search')
-      setSelectedGenre(null)
-    } catch (error) {
-      console.error('Error searching:', error)
-    }
-    setLoading(false)
+
+      setTrendingMovies(formatMovies(trending.results, 'movie'))
+      setPopularMovies(formatMovies(popular.results, 'movie'))
+      setTopRatedMovies(formatMovies(topRated.results, 'movie'))
+      setNewReleases(formatMovies(nowPlaying.results, 'movie'))
+      setMustSeeHits(formatMovies(highRated.results, 'movie'))
+      setActionMovies(formatMovies(action.results, 'movie'))
+      setComedyMovies(formatMovies(comedy.results, 'movie'))
+      setHorrorMovies(formatMovies(horror.results, 'movie'))
+      setTrendingTV(formatMovies(tv.results, 'tv'))
+      setPopularTV(formatMovies(popularTv.results, 'tv'))
+      setNewEpisodes(formatMovies(airingToday.results, 'tv'))
+      setTopRatedTV(formatMovies(topTv.results, 'tv'))
+      setKdramas(formatMovies(korean.results, 'tv'))
+      setCdramas(formatMovies(chinese.results, 'tv'))
+      setAnime(formatMovies(animeData.results, 'tv'))
+    } catch (error) {}
   }
 
-  const handlePageChange = (page) => {
-    if (activeSection === 'movies') fetchLatestMovies(page, selectedGenre)
-    else if (activeSection === 'tvshows') fetchLatestTVShows(page, selectedGenre)
-    else if (activeSection === 'search') searchMovies(searchQuery, page)
-    else if (activeSection === 'home') fetchLatestMovies(page, selectedGenre)
-  }
-
-  const handleGenreChange = (genreId) => {
-    setSelectedGenre(genreId)
-    setCurrentPage(1)
-    if (activeSection === 'movies') fetchLatestMovies(1, genreId)
-    else if (activeSection === 'tvshows') fetchLatestTVShows(1, genreId)
-    else fetchLatestMovies(1, genreId)
+  const formatMovies = (results, type) => {
+    return results.map(item => ({
+      id: item.id,
+      title: item.title || item.name,
+      year: (item.release_date || item.first_air_date)?.split('-')[0] || 'N/A',
+      rating: item.vote_average?.toFixed(1) || 'N/A',
+      poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750',
+      description: item.overview || 'No description available.',
+      backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+      type
+    }))
   }
 
   const loadWatchlist = async () => {
     try {
       const result = await window.storage.get('watchlist')
       if (result) setWatchlist(JSON.parse(result.value))
-    } catch (error) {
-      console.log('No watchlist found')
-    }
+    } catch (error) {}
   }
 
   const toggleWatchlist = async (movie) => {
@@ -235,25 +155,7 @@ function App() {
     setWatchlist(newWatchlist)
     try {
       await window.storage.set('watchlist', JSON.stringify(newWatchlist))
-    } catch (error) {
-      console.error('Error saving watchlist:', error)
-    }
-  }
-
-  const handleSectionChange = (section) => {
-    setActiveSection(section)
-    setCurrentPage(1)
-    setSelectedGenre(null)
-    if (section === 'movies') {
-      setLoading(true)
-      fetchLatestMovies(1, null)
-    } else if (section === 'tvshows') {
-      setLoading(true)
-      fetchLatestTVShows(1, null)
-    } else if (section === 'home') {
-      setLoading(true)
-      fetchLatestMovies(1, null)
-    }
+    } catch (error) {}
   }
 
   const handlePlayMovie = (movie) => {
@@ -261,83 +163,36 @@ function App() {
     setPlayingMovie(movie)
   }
 
-  const getDisplayContent = () => {
-    switch(activeSection) {
-      case 'movies':
-        return { data: movies, title: selectedGenre ? 'Movies by Genre' : 'Popular Movies', type: 'movie' }
-      case 'tvshows':
-        return { data: tvShows, title: selectedGenre ? 'TV Shows by Genre' : 'Popular TV Shows', type: 'tv' }
-      case 'mylist':
-        return { data: watchlist, title: 'My List', type: 'movie' }
-      case 'search':
-        return { data: movies, title: 'Search Results', type: 'movie' }
-      default:
-        return { data: movies, title: selectedGenre ? 'Movies by Genre' : 'Popular Movies', type: 'movie' }
-    }
-  }
-
-  const displayContent = getDisplayContent()
-  const showPagination = activeSection !== 'mylist' && !loading && displayContent.data.length > 0
-  const showGenreFilter = (activeSection === 'home' || activeSection === 'movies' || activeSection === 'tvshows') && activeSection !== 'mylist'
-
   return (
     <div className="app">
-      <Header 
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onSearch={searchMovies}
-        theme={theme}
-        setTheme={setTheme}
-        activeSection={activeSection}
-        setActiveSection={handleSectionChange}
-      />
-      {activeSection === 'home' && (
-        <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+      <Header theme={theme} setTheme={setTheme} />
+      
+      {continueWatching.length > 0 && (
+        <ContinueWatching continueWatching={continueWatching} onSelectMovie={handlePlayMovie} onRemove={removeContinueWatching} />
       )}
-      {activeSection === 'home' && continueWatching.length > 0 && (
-        <ContinueWatching 
-          continueWatching={continueWatching}
-          onSelectMovie={handlePlayMovie}
-          onRemove={removeContinueWatching}
-        />
-      )}
-      {showGenreFilter && (
-        <GenreFilter 
-          selectedGenre={selectedGenre}
-          onGenreChange={handleGenreChange}
-          contentType={displayContent.type}
-        />
-      )}
-      <MovieGrid 
-        movies={displayContent.data} 
-        loading={loading}
-        onSelectMovie={setSelectedMovie}
-        watchlist={watchlist}
-        onToggleWatchlist={toggleWatchlist}
-        title={displayContent.title}
-      />
-      {showPagination && (
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
-      )}
+
+      <MovieRow title="Trending Movies" movies={trendingMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="New Releases" movies={newReleases} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Must-See Hits" movies={mustSeeHits} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Popular Movies" movies={popularMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Top Rated Movies" movies={topRatedMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Action Movies" movies={actionMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Comedy Movies" movies={comedyMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Horror Movies" movies={horrorMovies} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Trending TV Shows" movies={trendingTV} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="New Episodes" movies={newEpisodes} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Popular TV Shows" movies={popularTV} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Top Rated TV Shows" movies={topRatedTV} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Korean Dramas" movies={kdramas} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Chinese Dramas" movies={cdramas} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+      <MovieRow title="Anime" movies={anime} onSelectMovie={setSelectedMovie} watchlist={watchlist} onToggleWatchlist={toggleWatchlist} />
+
       {selectedMovie && (
-        <MovieModal 
-          movie={selectedMovie} 
-          onClose={() => setSelectedMovie(null)}
-          isInWatchlist={watchlist.some(m => m.id === selectedMovie.id && m.type === selectedMovie.type)}
-          onToggleWatchlist={toggleWatchlist}
-          onPlayMovie={handlePlayMovie}
-        />
+        <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} isInWatchlist={watchlist.some(m => m.id === selectedMovie.id && m.type === selectedMovie.type)} onToggleWatchlist={toggleWatchlist} onPlayMovie={handlePlayMovie} />
       )}
+
       {playingMovie && (
-        <VideoPlayer 
-          movie={playingMovie}
-          onClose={() => setPlayingMovie(null)}
-          onUpdateProgress={updateContinueWatching}
-        />
+        <VideoPlayer movie={playingMovie} onClose={() => setPlayingMovie(null)} onUpdateProgress={updateContinueWatching} />
       )}
     </div>
   )
