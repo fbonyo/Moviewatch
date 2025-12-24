@@ -7,6 +7,7 @@ import CategorySections from './components/CategorySections'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
+import Footer from './components/Footer'
 import './styles/App.css'
 
 const TMDB_API_KEY = '9430d8abce320d89568c56813102ec1d'
@@ -341,6 +342,7 @@ function App() {
           )}
         </>
       )}
+      <Footer />
       {selectedMovie && (
         <MovieModal 
           movie={selectedMovie} 
