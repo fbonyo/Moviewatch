@@ -13,8 +13,9 @@ function Hero({ movies, onSelectMovie }) {
       <div className="hero-new-content">
         <div className="hero-text">
           <h1 className="hero-new-title">
-            Watch Unlimited Movies, TV Shows & More
+            Unlimited Movies, TV Shows & More
           </h1>
+          
           <div className="hero-new-buttons">
             <button className="btn-new btn-new-primary" onClick={handleStartWatching}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">

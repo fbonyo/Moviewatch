@@ -308,7 +308,10 @@ function App() {
       />
       {activeSection === 'home' && (
         <>
-          <Hero movies={movies} onSelectMovie={setSelectedMovie} />
+          <Hero 
+            movies={movies} 
+            onSelectMovie={setSelectedMovie}
+          />
           <CategorySections 
             onSelectMovie={setSelectedMovie}
             watchlist={watchlist}
