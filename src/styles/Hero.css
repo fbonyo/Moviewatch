@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   align-items: center;
-  padding-top: 0px;
+  padding-top: 80px;
   background: var(--bg-primary);
   position: relative;
   overflow: hidden;
@@ -76,15 +76,23 @@
 }
 
 .hero-new-title {
-  font-size: 4.5rem;
+  font-size: 5rem;
   font-weight: 900;
   line-height: 1.1;
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
   background: linear-gradient(135deg, var(--text-primary) 0%, #667eea 50%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -2px;
+}
+
+.hero-new-description {
+  font-size: 1.3rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+  max-width: 550px;
 }
 
 .hero-new-buttons {
@@ -131,9 +139,10 @@
 }
 
 .hero-movies-showcase {
-  perspective: 1500px;
+  perspective: 2000px;
   position: relative;
   animation: slideInRight 0.8s ease-out;
+  padding: 2rem;
 }
 
 @keyframes slideInRight {
@@ -151,20 +160,28 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
-  transform: rotateY(-15deg) rotateX(5deg);
+  transform: rotateY(-10deg) rotateX(3deg);
   transform-style: preserve-3d;
 }
 
 .showcase-card {
   aspect-ratio: 2/3;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 10px 40px var(--shadow);
   opacity: 0;
   animation: cardFadeIn 0.6s ease-out forwards;
   position: relative;
+}
+
+.showcase-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  transition: all 0.4s ease;
 }
 
 @keyframes cardFadeIn {
@@ -174,16 +191,9 @@
 }
 
 .showcase-card:hover {
-  transform: translateZ(20px) scale(1.05);
+  transform: translateZ(30px) scale(1.08);
   box-shadow: 0 20px 60px rgba(102, 126, 234, 0.6);
   z-index: 10;
-}
-
-.showcase-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: all 0.4s ease;
 }
 
 .showcase-card:hover img {
@@ -202,10 +212,203 @@
   font-weight: 600;
   opacity: 0;
   transition: opacity 0.3s ease;
+  border-radius: 0 0 12px 12px;
 }
 
 .showcase-card:hover .showcase-overlay {
   opacity: 1;
+}
+
+/* Must See Black Shows Section */
+.must-see-section {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+  background: var(--bg-primary);
+}
+
+.must-see-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.must-see-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.must-see-count {
+  padding: 0.3rem 0.8rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.must-see-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.must-see-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--glass-border);
+  border-top: 3px solid #f59e0b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.must-see-loading p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.must-see-scroll {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-bg) transparent;
+}
+
+.must-see-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.must-see-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 2.5rem;
+}
+
+.must-see-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-bg);
+  border-radius: 3px;
+}
+
+.must-see-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border);
+}
+
+.must-see-grid {
+  display: flex;
+  gap: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.must-see-card {
+  flex: 0 0 150px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.must-see-card:hover {
+  transform: translateY(-5px);
+}
+
+.must-see-poster {
+  position: relative;
+  aspect-ratio: 2/3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.must-see-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.must-see-card:hover .must-see-poster img {
+  transform: scale(1.05);
+  filter: brightness(0.7);
+}
+
+.must-see-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.must-see-card:hover .must-see-overlay {
+  opacity: 1;
+}
+
+.must-see-play-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+}
+
+.must-see-play-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.7);
+}
+
+.must-see-rating {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+.must-see-info {
+  padding: 0 0.25rem;
+}
+
+.must-see-show-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.must-see-year {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 1024px) {
@@ -218,24 +421,31 @@
     font-size: 3.5rem;
   }
   
+  .hero-movies-showcase {
+    padding: 1rem;
+  }
+  
   .movies-perspective {
     transform: none;
     grid-template-columns: repeat(4, 1fr);
   }
+  
+  .must-see-card {
+    flex: 0 0 140px;
+  }
 }
 
 @media (max-width: 768px) {
-  .hero-new {
-    padding-top: 80px;
-  }
-
-  .hero-new-content {
-    padding: 0 1.5rem;
-  }
-  
   .hero-new-title {
     font-size: 2.5rem;
-    margin-bottom: 3rem;
+  }
+  
+  .hero-new-description {
+    font-size: 1.1rem;
+  }
+  
+  .hero-movies-showcase {
+    padding: 0.5rem;
   }
   
   .movies-perspective {
@@ -248,5 +458,17 @@
   
   .btn-new {
     justify-content: center;
+  }
+  
+  .must-see-section {
+    padding: 1.5rem 1.5rem;
+  }
+  
+  .must-see-title {
+    font-size: 1.2rem;
+  }
+  
+  .must-see-card {
+    flex: 0 0 120px;
   }
 }
