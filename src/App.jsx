@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import GenreFilter from './components/GenreFilter'
 import MovieGrid from './components/MovieGrid'
 import CategorySections from './components/CategorySections'
+import ContinueWatching from './components/ContinueWatching'
 import MovieModal from './components/MovieModal'
 import VideoPlayer from './components/VideoPlayer'
 import Pagination from './components/Pagination'
@@ -21,6 +22,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState([])
+  const [continueWatching, setContinueWatching] = useState([])
   const [theme, setTheme] = useState('dark')
   const [activeSection, setActiveSection] = useState('home')
   const [currentPage, setCurrentPage] = useState(1)
@@ -29,6 +31,7 @@ function App() {
 
   useEffect(() => {
     loadWatchlist()
+    loadContinueWatching()
     loadTheme()
     fetchLatestMovies(1, null)
     fetchLatestTVShows(1, null)
@@ -65,24 +68,85 @@ function App() {
     }
   }
 
+  const loadContinueWatching = async () => {
+    try {
+      const result = await window.storage.get('continue-watching')
+      if (result) {
+        const items = JSON.parse(result.value)
+        items.sort((a, b) => b.lastWatched - a.lastWatched)
+        setContinueWatching(items)
+      }
+    } catch (error) {
+      console.log('No continue watching data found')
+    }
+  }
+
+  const updateContinueWatching = async (movie, watchedTime) => {
+    try {
+      const estimatedTotal = movie.type === 'tv' ? 2700 : 7200
+      
+      const updatedItem = {
+        ...movie,
+        watchedTime,
+        totalTime: estimatedTotal,
+        lastWatched: Date.now()
+      }
+
+      let items = [...continueWatching]
+      const existingIndex = items.findIndex(
+        item => item.id === movie.id && item.type === movie.type
+      )
+
+      if (existingIndex >= 0) {
+        items[existingIndex] = updatedItem
+      } else {
+        items.unshift(updatedItem)
+      }
+
+      items = items.slice(0, 20)
+
+      items = items.filter(item => {
+        const progress = (item.watchedTime / item.totalTime) * 100
+        return progress < 95
+      })
+
+      setContinueWatching(items)
+      await window.storage.set('continue-watching', JSON.stringify(items))
+    } catch (error) {
+      console.error('Error updating continue watching:', error)
+    }
+  }
+
+  const removeContinueWatching = async (movie) => {
+    try {
+      const items = continueWatching.filter(
+        item => !(item.id === movie.id && item.type === movie.type)
+      )
+      setContinueWatching(items)
+      await window.storage.set('continue-watching', JSON.stringify(items))
+    } catch (error) {
+      console.error('Error removing from continue watching:', error)
+    }
+  }
+
   const fetchLatestMovies = async (page, genreId) => {
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
+
     try {
-      const endpoint = genreId 
+      const endpoint = genreId
         ? `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
         : `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      
+
       const response = await fetch(endpoint)
       const data = await response.json()
-      
+
       const formattedMovies = data.results.map(movie => ({
         id: movie.id,
         title: movie.title,
         year: movie.release_date?.split('-')[0] || '2024',
         rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path 
+        poster_url: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : 'https://via.placeholder.com/500x750',
         description: movie.overview || 'No description available.',
@@ -91,7 +155,7 @@ function App() {
           : null,
         type: 'movie'
       }))
-      
+
       setMovies(formattedMovies)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
@@ -104,21 +168,21 @@ function App() {
   const fetchLatestTVShows = async (page, genreId) => {
     setLoading(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
+
     try {
       const endpoint = genreId
         ? `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&page=${page}`
         : `${TMDB_BASE_URL}/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
-      
+
       const response = await fetch(endpoint)
       const data = await response.json()
-      
+
       const formattedShows = data.results.map(show => ({
         id: show.id,
         title: show.name,
         year: show.first_air_date?.split('-')[0] || '2024',
         rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
+        poster_url: show.poster_path
           ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
           : 'https://via.placeholder.com/500x750',
         description: show.overview || 'No description available.',
@@ -127,7 +191,7 @@ function App() {
           : null,
         type: 'tv'
       }))
-      
+
       setTvShows(formattedShows)
       setTotalPages(Math.min(data.total_pages, 500))
       setCurrentPage(page)
@@ -145,32 +209,35 @@ function App() {
       setSelectedGenre(null)
       return
     }
-    
+
     setLoading(true)
+    setActiveSection('search')
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    
+
     try {
+      // Search both movies and TV shows, sort by popularity
       const [movieRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`),
-        fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`)
+        fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}&sort_by=popularity.desc`),
+        fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=${page}&sort_by=popularity.desc`)
       ])
-      
+
       const movieData = await movieRes.json()
       const tvData = await tvRes.json()
-      
+
       const formattedMovies = movieData.results?.map(movie => ({
         id: movie.id,
         title: movie.title,
         year: movie.release_date?.split('-')[0] || 'N/A',
         rating: movie.vote_average?.toFixed(1) || 'N/A',
-        poster_url: movie.poster_path 
+        poster_url: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : 'https://via.placeholder.com/500x750',
         description: movie.overview || 'No description available.',
         backdrop_url: movie.backdrop_path
           ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
           : null,
-        type: 'movie'
+        type: 'movie',
+        popularity: movie.popularity || 0
       })) || []
 
       const formattedTVShows = tvData.results?.map(show => ({
@@ -178,20 +245,24 @@ function App() {
         title: show.name,
         year: show.first_air_date?.split('-')[0] || 'N/A',
         rating: show.vote_average?.toFixed(1) || 'N/A',
-        poster_url: show.poster_path 
+        poster_url: show.poster_path
           ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
           : 'https://via.placeholder.com/500x750',
         description: show.overview || 'No description available.',
         backdrop_url: show.backdrop_path
           ? `https://image.tmdb.org/t/p/original${show.backdrop_path}`
           : null,
-        type: 'tv'
+        type: 'tv',
+        popularity: show.popularity || 0
       })) || []
-      
-      setMovies([...formattedMovies, ...formattedTVShows])
-      setTotalPages(Math.min(movieData.total_pages + tvData.total_pages, 500))
+
+      // Combine and sort by popularity (most popular first)
+      const combined = [...formattedMovies, ...formattedTVShows]
+      combined.sort((a, b) => b.popularity - a.popularity)
+
+      setMovies(combined)
+      setTotalPages(Math.min(Math.max(movieData.total_pages, tvData.total_pages), 500))
       setCurrentPage(page)
-      setActiveSection('search')
       setSelectedGenre(null)
     } catch (error) {
       console.error('Error searching:', error)
@@ -214,7 +285,7 @@ function App() {
   const handleGenreChange = (genreId) => {
     setSelectedGenre(genreId)
     setCurrentPage(1)
-    
+
     if (activeSection === 'movies') {
       fetchLatestMovies(1, genreId)
     } else if (activeSection === 'tvshows') {
@@ -238,15 +309,15 @@ function App() {
   const toggleWatchlist = async (movie) => {
     const isInWatchlist = watchlist.some(m => m.id === movie.id && m.type === movie.type)
     let newWatchlist
-    
+
     if (isInWatchlist) {
       newWatchlist = watchlist.filter(m => !(m.id === movie.id && m.type === movie.type))
     } else {
       newWatchlist = [...watchlist, movie]
     }
-    
+
     setWatchlist(newWatchlist)
-    
+
     try {
       await window.storage.set('watchlist', JSON.stringify(newWatchlist))
     } catch (error) {
@@ -258,7 +329,7 @@ function App() {
     setActiveSection(section)
     setCurrentPage(1)
     setSelectedGenre(null)
-    
+
     if (section === 'movies') {
       setLoading(true)
       fetchLatestMovies(1, null)
@@ -272,8 +343,20 @@ function App() {
   }
 
   const handlePlayMovie = (movie) => {
+    const existingProgress = continueWatching.find(
+      item => item.id === movie.id && item.type === movie.type
+    )
+    
+    const movieWithProgress = existingProgress 
+      ? { ...movie, watchedTime: existingProgress.watchedTime }
+      : movie
+
     setSelectedMovie(null)
-    setPlayingMovie(movie)
+    setPlayingMovie(movieWithProgress)
+  }
+
+  const handleContinueWatchingSelect = (movie) => {
+    handlePlayMovie(movie)
   }
 
   const getDisplayContent = () => {
@@ -285,7 +368,7 @@ function App() {
       case 'mylist':
         return { data: watchlist, title: 'My List', type: 'movie' }
       case 'search':
-        return { data: movies, title: 'Search Results', type: 'movie' }
+        return { data: movies, title: `Search Results for "${searchQuery}"`, type: 'movie' }
       default:
         return { data: movies, title: selectedGenre ? 'Movies by Genre' : 'Popular Movies', type: 'movie' }
     }
@@ -297,7 +380,7 @@ function App() {
 
   return (
     <div className="app">
-      <Header 
+      <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onSearch={searchMovies}
@@ -308,11 +391,18 @@ function App() {
       />
       {activeSection === 'home' && (
         <>
-          <Hero 
-            movies={movies} 
+          <Hero
+            movies={movies}
             onSelectMovie={setSelectedMovie}
           />
-          <CategorySections 
+          {continueWatching.length > 0 && (
+            <ContinueWatching 
+              continueWatching={continueWatching}
+              onSelectMovie={handleContinueWatchingSelect}
+              onRemove={removeContinueWatching}
+            />
+          )}
+          <CategorySections
             onSelectMovie={setSelectedMovie}
             watchlist={watchlist}
             onToggleWatchlist={toggleWatchlist}
@@ -322,14 +412,14 @@ function App() {
       {activeSection !== 'home' && (
         <>
           {showGenreFilter && (
-            <GenreFilter 
+            <GenreFilter
               selectedGenre={selectedGenre}
               onGenreChange={handleGenreChange}
               contentType={displayContent.type}
             />
           )}
-          <MovieGrid 
-            movies={displayContent.data} 
+          <MovieGrid
+            movies={displayContent.data}
             loading={loading}
             onSelectMovie={setSelectedMovie}
             watchlist={watchlist}
@@ -337,7 +427,7 @@ function App() {
             title={displayContent.title}
           />
           {showPagination && (
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
@@ -347,8 +437,8 @@ function App() {
       )}
       <Footer />
       {selectedMovie && (
-        <MovieModal 
-          movie={selectedMovie} 
+        <MovieModal
+          movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           isInWatchlist={watchlist.some(m => m.id === selectedMovie.id && m.type === selectedMovie.type)}
           onToggleWatchlist={toggleWatchlist}
@@ -356,9 +446,10 @@ function App() {
         />
       )}
       {playingMovie && (
-        <VideoPlayer 
+        <VideoPlayer
           movie={playingMovie}
           onClose={() => setPlayingMovie(null)}
+          onUpdateProgress={updateContinueWatching}
         />
       )}
     </div>
